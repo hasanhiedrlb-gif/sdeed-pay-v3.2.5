@@ -113,6 +113,7 @@ function initializeSeedData(): SdeedpayGlobalState {
   const now = Date.now();
   const minute = 60 * 1000;
   const hour = 60 * minute;
+  const day = 24 * hour;
 
   // Initialize pool of requests matching prompt examples
   // e.g. Pool=[10,10,10,10,20,20,30,40,50,60]
@@ -272,7 +273,7 @@ function initializeSeedData(): SdeedpayGlobalState {
 
   const claims: SpDepositClaim[] = [];
 
-  // Seed initial P2P transfers
+  // Seed initial P2P transfers across last 7 days
   const transfers: SpP2PTransfer[] = [
     {
       id: 'trf_p2p_seed_01',
@@ -286,7 +287,7 @@ function initializeSeedData(): SdeedpayGlobalState {
       from_user_name: 'Rami Al-Hassan (Courier)',
       to_user_name: 'Nour Khoury (Driver)',
       reference_id: 'P2P-96171445566-25USD',
-      created_at: new Date(now - 120 * minute).toISOString(),
+      created_at: new Date(now - 2 * hour).toISOString(),
       completed_at: new Date(now - 118 * minute).toISOString(),
     },
     {
@@ -300,8 +301,95 @@ function initializeSeedData(): SdeedpayGlobalState {
       from_user_name: 'Nour Khoury (Driver)',
       to_user_name: 'Charbel Haddad (Deliveries)',
       reference_id: 'P2P-QR-CHARBEL-15USD',
-      created_at: new Date(now - 60 * minute).toISOString(),
-      completed_at: new Date(now - 59 * minute).toISOString(),
+      created_at: new Date(now - 4 * hour).toISOString(),
+      completed_at: new Date(now - (4 * hour - minute)).toISOString(),
+    },
+    {
+      id: 'trf_p2p_seed_03',
+      from_user_id: 'usr_kamekaz_worker_03',
+      to_user_id: 'usr_kamekaz_worker_01',
+      to_phone: '+96170112233',
+      amount: 30,
+      method: 'phone',
+      status: 'completed',
+      otp_code: '341902',
+      from_user_name: 'Charbel Haddad (Deliveries)',
+      to_user_name: 'Rami Al-Hassan (Courier)',
+      reference_id: 'P2P-96170112233-30USD',
+      created_at: new Date(now - 1 * day - 3 * hour).toISOString(),
+      completed_at: new Date(now - 1 * day - (3 * hour - 2 * minute)).toISOString(),
+    },
+    {
+      id: 'trf_p2p_seed_04',
+      from_user_id: 'adv_kamekaz_tech_01',
+      to_user_id: 'usr_kamekaz_worker_01',
+      amount: 50,
+      method: 'qr',
+      status: 'completed',
+      otp_code: '459128',
+      from_user_name: 'ByteCraft Media Agency',
+      to_user_name: 'Rami Al-Hassan (Courier)',
+      reference_id: 'P2P-QR-RAMI-50USD',
+      created_at: new Date(now - 2 * day - 5 * hour).toISOString(),
+      completed_at: new Date(now - 2 * day - (5 * hour - minute)).toISOString(),
+    },
+    {
+      id: 'trf_p2p_seed_05',
+      from_user_id: 'usr_kamekaz_worker_01',
+      to_user_id: 'usr_kamekaz_worker_03',
+      to_phone: '+96176889900',
+      amount: 20,
+      method: 'phone',
+      status: 'completed',
+      otp_code: '908234',
+      from_user_name: 'Rami Al-Hassan (Courier)',
+      to_user_name: 'Charbel Haddad (Deliveries)',
+      reference_id: 'P2P-96176889900-20USD',
+      created_at: new Date(now - 3 * day - 2 * hour).toISOString(),
+      completed_at: new Date(now - 3 * day - (2 * hour - minute)).toISOString(),
+    },
+    {
+      id: 'trf_p2p_seed_06',
+      from_user_id: 'usr_kamekaz_worker_02',
+      to_user_id: 'usr_kamekaz_worker_01',
+      amount: 40,
+      method: 'qr',
+      status: 'completed',
+      otp_code: '124987',
+      from_user_name: 'Nour Khoury (Driver)',
+      to_user_name: 'Rami Al-Hassan (Courier)',
+      reference_id: 'P2P-QR-RAMI-40USD',
+      created_at: new Date(now - 4 * day - 6 * hour).toISOString(),
+      completed_at: new Date(now - 4 * day - (6 * hour - 2 * minute)).toISOString(),
+    },
+    {
+      id: 'trf_p2p_seed_07',
+      from_user_id: 'usr_kamekaz_worker_01',
+      to_user_id: 'usr_kamekaz_worker_02',
+      to_phone: '+96171445566',
+      amount: 35,
+      method: 'phone',
+      status: 'completed',
+      otp_code: '671239',
+      from_user_name: 'Rami Al-Hassan (Courier)',
+      to_user_name: 'Nour Khoury (Driver)',
+      reference_id: 'P2P-96171445566-35USD',
+      created_at: new Date(now - 5 * day - 4 * hour).toISOString(),
+      completed_at: new Date(now - 5 * day - (4 * hour - minute)).toISOString(),
+    },
+    {
+      id: 'trf_p2p_seed_08',
+      from_user_id: 'usr_kamekaz_worker_03',
+      to_user_id: 'usr_kamekaz_worker_02',
+      amount: 15,
+      method: 'qr',
+      status: 'completed',
+      otp_code: '890123',
+      from_user_name: 'Charbel Haddad (Deliveries)',
+      to_user_name: 'Nour Khoury (Driver)',
+      reference_id: 'P2P-QR-NOUR-15USD',
+      created_at: new Date(now - 6 * day - 8 * hour).toISOString(),
+      completed_at: new Date(now - 6 * day - (8 * hour - minute)).toISOString(),
     },
   ];
 

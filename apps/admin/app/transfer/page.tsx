@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useUser } from '@/lib/user-context';
 import { sdeedpayApi } from '@/lib/sdeedpay-api';
 import { SpP2PTransfer, KycStatus, SpUser } from '@/lib/sdeedpay-types';
@@ -8,6 +8,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 import {
   Send,
   QrCode,
@@ -25,6 +35,14 @@ import {
   Search,
   ExternalLink,
   Lock,
+  TrendingUp,
+  Activity,
+  BarChart2,
+  Calendar,
+  DollarSign,
+  Filter,
+  ArrowUpRight,
+  ArrowDownLeft,
 } from 'lucide-react';
 
 export default function TransferPage() {
@@ -50,9 +68,12 @@ export default function TransferPage() {
   const [confirmingOtp, setConfirmingOtp] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
 
-  // Transfer History State
+  // Transfer History & Ledger State
   const [transfers, setTransfers] = useState<SpP2PTransfer[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [ledgerScope, setLedgerScope] = useState<'all' | 'my'>('all');
+  const [chartMetric, setChartMetric] = useState<'volume' | 'in_out' | 'count'>('volume');
+  const [ledgerSearch, setLedgerSearch] = useState('');
 
   // User QR Payload State
   const [qrData, setQrData] = useState<{
@@ -77,10 +98,9 @@ export default function TransferPage() {
   }, [currentUser]);
 
   async function loadTransfers() {
-    if (!currentUser) return;
     setHistoryLoading(true);
     try {
-      const data = await sdeedpayApi.getTransfers(currentUser.id);
+      const data = await sdeedpayApi.getTransfers();
       setTransfers(data);
     } catch (err) {
       console.error(err);
@@ -88,6 +108,94 @@ export default function TransferPage() {
       setHistoryLoading(false);
     }
   }
+
+  // 7-day Volume and Activity aggregation for Recharts LineChart
+  const sevenDaysStats = useMemo(() => {
+    const dataPoints: {
+      dateKey: string;
+      dayLabel: string;
+      shortDay: string;
+      fullDate: string;
+      totalVolume: number;
+      outboundVolume: number;
+      inboundVolume: number;
+      count: number;
+      completedCount: number;
+      avgAmount: number;
+    }[] = [];
+
+    const now = new Date();
+    
+    // Dataset for calculation based on selected scope
+    const targetTransfers = ledgerScope === 'my' && currentUser
+      ? transfers.filter((t) => t.from_user_id === currentUser.id || t.to_user_id === currentUser.id)
+      : transfers;
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+
+      const nextD = new Date(d);
+      nextD.setDate(nextD.getDate() + 1);
+
+      const dayTransfers = targetTransfers.filter((t) => {
+        const tDate = new Date(t.created_at);
+        return tDate >= d && tDate < nextD;
+      });
+
+      const totalVolume = dayTransfers.reduce(
+        (acc, t) => acc + (t.status === 'completed' || t.status === 'pending_otp' ? t.amount : 0),
+        0
+      );
+
+      const outboundVolume = currentUser
+        ? dayTransfers
+            .filter((t) => t.from_user_id === currentUser.id)
+            .reduce((acc, t) => acc + t.amount, 0)
+        : 0;
+
+      const inboundVolume = currentUser
+        ? dayTransfers
+            .filter((t) => t.to_user_id === currentUser.id)
+            .reduce((acc, t) => acc + t.amount, 0)
+        : 0;
+
+      const count = dayTransfers.length;
+      const completedCount = dayTransfers.filter((t) => t.status === 'completed').length;
+      const avgAmount = count > 0 ? Number((totalVolume / count).toFixed(1)) : 0;
+
+      const monthStr = d.toLocaleDateString('en-US', { month: 'short' });
+      const dayNum = d.getDate();
+      const dayName = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
+
+      dataPoints.push({
+        dateKey: `${monthStr} ${dayNum}`,
+        dayLabel: `${dayName} (${monthStr} ${dayNum})`,
+        shortDay: dayName,
+        fullDate: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        totalVolume,
+        outboundVolume,
+        inboundVolume,
+        count,
+        completedCount,
+        avgAmount,
+      });
+    }
+
+    const total7DayVolume = dataPoints.reduce((acc, r) => acc + r.totalVolume, 0);
+    const total7DayCount = dataPoints.reduce((acc, r) => acc + r.count, 0);
+    const peakVolume = Math.max(...dataPoints.map((r) => r.totalVolume), 0);
+    const avg7DayTx = total7DayCount > 0 ? Number((total7DayVolume / total7DayCount).toFixed(2)) : 0;
+
+    return {
+      data: dataPoints,
+      total7DayVolume,
+      total7DayCount,
+      peakVolume,
+      avg7DayTx,
+    };
+  }, [transfers, currentUser, ledgerScope]);
 
   async function loadQrData() {
     if (!currentUser) return;
@@ -724,111 +832,437 @@ export default function TransferPage() {
         </div>
       )}
 
-      {/* TAB 3: TRANSFER LEDGER & HISTORY */}
+      {/* TAB 3: TRANSFER LEDGER & HISTORY WITH RECHARTS LINE CHART */}
       {activeTab === 'history' && (
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-base font-bold text-slate-900">
-                P2P Transfer Ledger
-              </CardTitle>
-              <p className="text-xs text-slate-500">
-                Audit records of inbound & outbound peer transactions
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadTransfers}
-              className="text-xs flex items-center gap-1.5"
-            >
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
-            </Button>
-          </CardHeader>
-          <CardContent className="pt-4">
-            {historyLoading ? (
-              <div className="py-8 text-center text-xs text-slate-400">Loading transfer history...</div>
-            ) : transfers.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 text-xs">
-                No P2P transfers recorded for this account.
+        <div className="space-y-6">
+          {/* 7-DAY VOLUME RECHARTS VISUALIZATION CARD */}
+          <Card className="border-slate-200 shadow-sm overflow-hidden">
+            <CardHeader className="pb-3 border-b border-slate-100 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" /> Recharts Analytics
+                    </span>
+                    <span className="text-[11px] text-slate-300">7-Day Trailing Window</span>
+                  </div>
+                  <CardTitle className="text-base font-bold text-white mt-1 flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-indigo-400" />
+                    P2P Transfer Volume & Daily Velocity
+                  </CardTitle>
+                  <p className="text-xs text-slate-300">
+                    Real-time visualization of peer transfer values and volume flows over the last 7 days
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Scope Selector */}
+                  <div className="inline-flex rounded-lg bg-slate-800/80 p-0.5 border border-slate-700 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setLedgerScope('all')}
+                      className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${
+                        ledgerScope === 'all'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      All Network
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLedgerScope('my')}
+                      className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${
+                        ledgerScope === 'my'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      My Account
+                    </button>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadTransfers}
+                    disabled={historyLoading}
+                    className="text-xs flex items-center gap-1.5 bg-white/10 text-white border-white/20 hover:bg-white/20"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${historyLoading ? 'animate-spin' : ''}`} /> Refresh
+                  </Button>
+                </div>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-200">
-                    <tr>
-                      <th className="p-3">Type</th>
-                      <th className="p-3">Reference / ID</th>
-                      <th className="p-3">Sender (From)</th>
-                      <th className="p-3">Recipient (To)</th>
-                      <th className="p-3">Amount</th>
-                      <th className="p-3">Method</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {transfers.map((tx) => {
-                      const isOutbound = tx.from_user_id === currentUser?.id;
-                      return (
-                        <tr key={tx.id} className="hover:bg-slate-50 transition">
-                          <td className="p-3">
-                            {isOutbound ? (
-                              <span className="rounded bg-rose-100 text-rose-800 font-bold px-2 py-0.5 text-[10px]">
-                                OUTBOUND
-                              </span>
-                            ) : (
-                              <span className="rounded bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 text-[10px]">
-                                INBOUND
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-3 font-mono font-semibold text-slate-800">
-                            {tx.reference_id || tx.id}
-                          </td>
-                          <td className="p-3 text-slate-700">
-                            <span className="font-bold">{tx.from_user_name || tx.from_user_id}</span>
-                          </td>
-                          <td className="p-3 text-slate-700">
-                            <span className="font-bold">{tx.to_user_name || tx.to_user_id}</span>
-                            {tx.to_phone && <span className="block text-[10px] text-slate-400">{tx.to_phone}</span>}
-                          </td>
-                          <td className="p-3 font-mono font-bold text-sm">
-                            <span className={isOutbound ? 'text-rose-600' : 'text-emerald-600'}>
-                              {isOutbound ? `-$${tx.amount}` : `+$${tx.amount}`}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <span className="rounded bg-indigo-50 text-indigo-700 px-1.5 py-0.5 uppercase font-bold text-[10px] border border-indigo-200">
-                              {tx.method}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <Badge
-                              variant={
-                                tx.status === 'completed'
-                                  ? 'success'
-                                  : tx.status === 'pending_otp'
-                                  ? 'warning'
-                                  : 'danger'
-                              }
-                              className="text-[10px] uppercase font-bold"
-                            >
-                              {tx.status.replace('_', ' ')}
-                            </Badge>
-                          </td>
-                          <td className="p-3 text-slate-500 text-[11px]">
-                            {new Date(tx.created_at).toLocaleString()}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+
+              {/* 4 KPI METRIC STRIPS */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-3 border-t border-white/10">
+                <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                    7-Day Total Volume
+                  </span>
+                  <div className="text-xl font-black font-mono text-emerald-400 mt-0.5">
+                    ${sevenDaysStats.total7DayVolume.toFixed(2)}{' '}
+                    <span className="text-[10px] font-normal text-slate-300">pts</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                    <ArrowUpRight className="h-3 w-3 text-emerald-400" /> Settled peer transactions
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                    Total Transactions
+                  </span>
+                  <div className="text-xl font-black font-mono text-indigo-300 mt-0.5">
+                    {sevenDaysStats.total7DayCount}{' '}
+                    <span className="text-[10px] font-normal text-slate-300">transfers</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                    <Activity className="h-3 w-3 text-indigo-400" /> Over trailing 7 days
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                    Single-Day Peak
+                  </span>
+                  <div className="text-xl font-black font-mono text-amber-300 mt-0.5">
+                    ${sevenDaysStats.peakVolume.toFixed(2)}{' '}
+                    <span className="text-[10px] font-normal text-slate-300">pts</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    Highest daily volume recorded
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                    Average Transfer Size
+                  </span>
+                  <div className="text-xl font-black font-mono text-white mt-0.5">
+                    ${sevenDaysStats.avg7DayTx.toFixed(2)}{' '}
+                    <span className="text-[10px] font-normal text-slate-300">pts</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    Mean amount per transfer
+                  </div>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+
+            <CardContent className="pt-4 pb-4">
+              {/* Chart Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-700">Display Metric:</span>
+                  <div className="inline-flex rounded-md bg-slate-100 p-0.5 border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setChartMetric('volume')}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded transition ${
+                        chartMetric === 'volume'
+                          ? 'bg-white text-indigo-700 shadow-xs border border-slate-200'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Total Volume ($)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setChartMetric('in_out')}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded transition ${
+                        chartMetric === 'in_out'
+                          ? 'bg-white text-indigo-700 shadow-xs border border-slate-200'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Flow (In vs Out)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setChartMetric('count')}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded transition ${
+                        chartMetric === 'count'
+                          ? 'bg-white text-indigo-700 shadow-xs border border-slate-200'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Transfer Count (#)
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-xs text-slate-500 flex items-center gap-1 font-mono">
+                  <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                  {sevenDaysStats.data[0]?.fullDate} — {sevenDaysStats.data[6]?.fullDate}
+                </div>
+              </div>
+
+              {/* RECHARTS CONTAINER */}
+              <div className="w-full h-72 pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={sevenDaysStats.data}
+                    margin={{ top: 10, right: 20, left: -10, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis
+                      dataKey="dateKey"
+                      stroke="#94a3b8"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={{ stroke: '#e2e8f0' }}
+                    />
+                    <YAxis
+                      stroke="#94a3b8"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={{ stroke: '#e2e8f0' }}
+                      tickFormatter={(value) => (chartMetric === 'count' ? `${value}` : `$${value}`)}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const item = payload[0].payload;
+                          return (
+                            <div className="rounded-xl border border-slate-800 bg-slate-900/95 p-3 text-xs text-white shadow-xl backdrop-blur-md min-w-[200px]">
+                              <div className="font-bold text-slate-200 border-b border-slate-800 pb-1.5 mb-2 flex items-center justify-between">
+                                <span>{item.dayLabel}</span>
+                                <span className="text-[10px] text-slate-400 font-mono">{item.shortDay}</span>
+                              </div>
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between text-indigo-300 font-semibold">
+                                  <span>Total Volume:</span>
+                                  <span className="font-mono text-sm font-bold text-white">
+                                    ${item.totalVolume.toFixed(2)}
+                                  </span>
+                                </div>
+                                {chartMetric === 'in_out' && (
+                                  <>
+                                    <div className="flex items-center justify-between text-rose-300">
+                                      <span>Outbound (Sent):</span>
+                                      <span className="font-mono font-bold">-${item.outboundVolume.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-emerald-300">
+                                      <span>Inbound (Received):</span>
+                                      <span className="font-mono font-bold">+${item.inboundVolume.toFixed(2)}</span>
+                                    </div>
+                                  </>
+                                )}
+                                <div className="flex items-center justify-between text-slate-400 pt-1 border-t border-slate-800/80">
+                                  <span>Transfers:</span>
+                                  <span className="font-mono font-bold text-slate-200">{item.count} tx</span>
+                                </div>
+                                {item.count > 0 && (
+                                  <div className="flex items-center justify-between text-slate-400">
+                                    <span>Avg Ticket:</span>
+                                    <span className="font-mono text-slate-300">${item.avgAmount.toFixed(2)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }}
+                      formatter={(value) => <span className="text-slate-700 font-semibold">{value}</span>}
+                    />
+
+                    {chartMetric === 'volume' && (
+                      <Line
+                        type="monotone"
+                        dataKey="totalVolume"
+                        name="Daily Volume ($)"
+                        stroke="#4f46e5"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: '#4f46e5', stroke: '#fff', strokeWidth: 1.5 }}
+                        activeDot={{ r: 6, fill: '#4338ca', stroke: '#c7d2fe', strokeWidth: 2 }}
+                      />
+                    )}
+
+                    {chartMetric === 'in_out' && (
+                      <>
+                        <Line
+                          type="monotone"
+                          dataKey="inboundVolume"
+                          name="Inbound Received ($)"
+                          stroke="#10b981"
+                          strokeWidth={2.5}
+                          dot={{ r: 3.5, fill: '#10b981', stroke: '#fff', strokeWidth: 1.5 }}
+                          activeDot={{ r: 6, fill: '#059669', stroke: '#a7f3d0', strokeWidth: 2 }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="outboundVolume"
+                          name="Outbound Sent ($)"
+                          stroke="#f43f5e"
+                          strokeWidth={2.5}
+                          dot={{ r: 3.5, fill: '#f43f5e', stroke: '#fff', strokeWidth: 1.5 }}
+                          activeDot={{ r: 6, fill: '#e11d48', stroke: '#fecdd3', strokeWidth: 2 }}
+                        />
+                      </>
+                    )}
+
+                    {chartMetric === 'count' && (
+                      <>
+                        <Line
+                          type="monotone"
+                          dataKey="count"
+                          name="Transfer Count (#)"
+                          stroke="#f59e0b"
+                          strokeWidth={2.5}
+                          dot={{ r: 4, fill: '#f59e0b', stroke: '#fff', strokeWidth: 1.5 }}
+                          activeDot={{ r: 6, fill: '#d97706', stroke: '#fde68a', strokeWidth: 2 }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="completedCount"
+                          name="Settled (#)"
+                          stroke="#10b981"
+                          strokeDasharray="4 4"
+                          strokeWidth={2}
+                          dot={{ r: 3, fill: '#10b981' }}
+                        />
+                      </>
+                    )}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AUDIT TABLE & SEARCH LEDGER */}
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-indigo-600" />
+                  P2P Transfer Ledger Records
+                </CardTitle>
+                <p className="text-xs text-slate-500">
+                  Comprehensive audit trail of settled and OTP-pending peer transactions
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative w-48 md:w-64">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <Input
+                    placeholder="Search name, phone, ref..."
+                    value={ledgerSearch}
+                    onChange={(e) => setLedgerSearch(e.target.value)}
+                    className="h-8 pl-8 text-xs"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="pt-4">
+              {historyLoading ? (
+                <div className="py-8 text-center text-xs text-slate-400">Loading transfer history...</div>
+              ) : transfers.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 text-xs">
+                  No P2P transfers recorded in system.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-200">
+                      <tr>
+                        <th className="p-3">Type</th>
+                        <th className="p-3">Reference / ID</th>
+                        <th className="p-3">Sender (From)</th>
+                        <th className="p-3">Recipient (To)</th>
+                        <th className="p-3">Amount</th>
+                        <th className="p-3">Method</th>
+                        <th className="p-3">Status</th>
+                        <th className="p-3">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {transfers
+                        .filter((tx) => {
+                          if (ledgerScope === 'my' && currentUser) {
+                            if (tx.from_user_id !== currentUser.id && tx.to_user_id !== currentUser.id) {
+                              return false;
+                            }
+                          }
+                          if (!ledgerSearch.trim()) return true;
+                          const q = ledgerSearch.toLowerCase();
+                          return (
+                            tx.reference_id?.toLowerCase().includes(q) ||
+                            tx.id.toLowerCase().includes(q) ||
+                            tx.from_user_name?.toLowerCase().includes(q) ||
+                            tx.to_user_name?.toLowerCase().includes(q) ||
+                            tx.to_phone?.toLowerCase().includes(q)
+                          );
+                        })
+                        .map((tx) => {
+                          const isOutbound = tx.from_user_id === currentUser?.id;
+                          return (
+                            <tr key={tx.id} className="hover:bg-slate-50 transition">
+                              <td className="p-3">
+                                {isOutbound ? (
+                                  <span className="inline-flex items-center gap-1 rounded bg-rose-100 text-rose-800 font-bold px-2 py-0.5 text-[10px]">
+                                    <ArrowUpRight className="h-3 w-3" /> OUTBOUND
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 text-[10px]">
+                                    <ArrowDownLeft className="h-3 w-3" /> INBOUND
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-3 font-mono font-semibold text-slate-800">
+                                {tx.reference_id || tx.id}
+                              </td>
+                              <td className="p-3 text-slate-700">
+                                <span className="font-bold">{tx.from_user_name || tx.from_user_id}</span>
+                              </td>
+                              <td className="p-3 text-slate-700">
+                                <span className="font-bold">{tx.to_user_name || tx.to_user_id}</span>
+                                {tx.to_phone && (
+                                  <span className="block text-[10px] text-slate-400">{tx.to_phone}</span>
+                                )}
+                              </td>
+                              <td className="p-3 font-mono font-bold text-sm">
+                                <span className={isOutbound ? 'text-rose-600' : 'text-emerald-600'}>
+                                  {isOutbound ? `-$${tx.amount}` : `+$${tx.amount}`}
+                                </span>
+                              </td>
+                              <td className="p-3">
+                                <span className="rounded bg-indigo-50 text-indigo-700 px-1.5 py-0.5 uppercase font-bold text-[10px] border border-indigo-200">
+                                  {tx.method}
+                                </span>
+                              </td>
+                              <td className="p-3">
+                                <Badge
+                                  variant={
+                                    tx.status === 'completed'
+                                      ? 'success'
+                                      : tx.status === 'pending_otp'
+                                      ? 'warning'
+                                      : 'danger'
+                                  }
+                                  className="text-[10px] uppercase font-bold"
+                                >
+                                  {tx.status.replace('_', ' ')}
+                                </Badge>
+                              </td>
+                              <td className="p-3 text-slate-500 text-[11px]">
+                                {new Date(tx.created_at).toLocaleString()}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* TAB 4: KAMEKAZ KYC SIMULATOR */}
