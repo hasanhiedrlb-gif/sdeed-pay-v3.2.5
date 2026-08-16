@@ -1,6 +1,8 @@
 {
   "name": "sdeedpay v1.1.0 - Smart Payments Bank",
-  "description": "Smart payments bank engine with AI batch allocation, multi-batch bulk approval/rejection toolbar, withdrawal liquidity pools, P2P transfers with 2-step SMS OTP, QR code payloads, and admin approval workflows.",
-  "requestFramePermissions": [],
+  "description": "Smart payments bank engine with camera-based QR code scanner, AI batch allocation, multi-batch bulk approval/rejection toolbar, withdrawal liquidity pools, P2P transfers with 2-step SMS OTP, and admin approval workflows.",
+  "requestFramePermissions": [
+    "camera"
+  ],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

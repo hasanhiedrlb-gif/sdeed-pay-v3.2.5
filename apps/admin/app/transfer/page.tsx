@@ -64,7 +64,13 @@ import {
   UserPlus,
   FileText,
   CheckCheck,
+  Camera,
+  Scan,
+  ScanLine,
+  Share2,
 } from 'lucide-react';
+import { QrCameraScannerModal, ParsedQrPayload } from '@/components/QrCameraScannerModal';
+import { QrDownloadModal } from '@/components/QrDownloadModal';
 
 export default function TransferPage() {
   const { currentUser, users, refreshUsers } = useUser();
@@ -77,6 +83,22 @@ export default function TransferPage() {
   const [transferLoading, setTransferLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [isQrDownloadOpen, setIsQrDownloadOpen] = useState(false);
+
+  const handleQrScanSuccess = (payload: ParsedQrPayload) => {
+    setMethod(payload.method || 'qr');
+    setRecipientInput(payload.userId);
+    if (payload.amount && !isNaN(payload.amount)) {
+      setAmount(payload.amount);
+    }
+    setErrorMessage(null);
+    setSuccessMessage(
+      `QR Code Scanned Successfully! Recipient User ID automatically filled: ${payload.userId}${
+        payload.name ? ` (${payload.name})` : ''
+      }${payload.amount ? ` • Preset Amount: $${payload.amount}` : ''}`
+    );
+  };
 
   // OTP Confirmation Modal State
   const [pendingTransfer, setPendingTransfer] = useState<{
@@ -232,13 +254,15 @@ export default function TransferPage() {
 
   // Apply a template to the transfer form
   const handleApplyTemplate = (tmpl: FrequentTransferTemplate) => {
+    // Correctly map all template attributes to form state
     setMethod(tmpl.method);
     setRecipientInput(tmpl.recipient_input);
     if (tmpl.default_amount && tmpl.default_amount > 0) {
       setAmount(tmpl.default_amount);
     }
     setSelectedTemplateId(tmpl.id);
-    
+    setErrorMessage(null);
+
     // Update usage count and last used date
     const updated = templates.map((t) =>
       t.id === tmpl.id
@@ -246,9 +270,11 @@ export default function TransferPage() {
         : t
     );
     saveTemplatesToStorage(updated);
-    
-    setTemplateToast(`Applied template: "${tmpl.name}" ($${tmpl.default_amount || amount})`);
-    setTimeout(() => setTemplateToast(null), 3000);
+
+    setTemplateToast(
+      `Applied template: "${tmpl.name}" • Recipient: ${tmpl.recipient_input} • Amount: $${tmpl.default_amount || amount}`
+    );
+    setTimeout(() => setTemplateToast(null), 3500);
   };
 
   // Clear template selection
@@ -1118,51 +1144,63 @@ export default function TransferPage() {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-        <button
-          onClick={() => setActiveTab('send')}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
-            activeTab === 'send'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-          }`}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-2">
+        <div className="flex items-center gap-2 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('send')}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition shrink-0 ${
+              activeTab === 'send'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            <Send className="h-4 w-4" />
+            Send Money (P2P)
+          </button>
+          <button
+            onClick={() => setActiveTab('qr')}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition shrink-0 ${
+              activeTab === 'qr'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            <QrCode className="h-4 w-4" />
+            My QR Code
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition shrink-0 ${
+              activeTab === 'history'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            <Clock className="h-4 w-4" />
+            Transfer Ledger ({transfers.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('kyc')}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition shrink-0 ${
+              activeTab === 'kyc'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            Kamekaz KYC Simulator
+          </button>
+        </div>
+
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => setIsQrDownloadOpen(true)}
+          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold h-8.5 px-3 flex items-center gap-1.5 shrink-0 shadow-xs"
         >
-          <Send className="h-4 w-4" />
-          Send Money (P2P)
-        </button>
-        <button
-          onClick={() => setActiveTab('qr')}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
-            activeTab === 'qr'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-          }`}
-        >
-          <QrCode className="h-4 w-4" />
-          My QR Code
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
-            activeTab === 'history'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-          }`}
-        >
-          <Clock className="h-4 w-4" />
-          Transfer Ledger ({transfers.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('kyc')}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
-            activeTab === 'kyc'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-          }`}
-        >
-          <ShieldCheck className="h-4 w-4" />
-          Kamekaz KYC Simulator
-        </button>
+          <Download className="h-3.5 w-3.5 text-indigo-600" />
+          <span>Generate & Download My QR</span>
+        </Button>
       </div>
 
       {/* Toast Notification */}
@@ -1303,17 +1341,25 @@ export default function TransferPage() {
                       </div>
                     )}
 
-                    {/* Saved Templates Quick Select Dropdown */}
+                    {/* Saved Templates Quick Select & Carousel */}
                     {templates.length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-                            Load from Saved Templates
+                      <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold uppercase tracking-wider text-indigo-950 flex items-center gap-1.5">
+                            <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                            <span>Saved Frequent Transfers ({templates.length})</span>
                           </label>
-                          <span className="text-[11px] text-slate-400 font-medium">
-                            {templates.length} saved recipients
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenTemplateModal()}
+                            className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                          >
+                            <Plus className="h-3 w-3" />
+                            <span>New Template</span>
+                          </button>
                         </div>
+
+                        {/* Dropdown Select */}
                         <div className="relative">
                           <select
                             value={selectedTemplateId || ''}
@@ -1325,7 +1371,7 @@ export default function TransferPage() {
                                 handleClearTemplate();
                               }
                             }}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            className="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 shadow-2xs focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                           >
                             <option value="">-- Choose a Saved Template / Recipient --</option>
                             {templates.map((tmpl) => (
@@ -1336,14 +1382,52 @@ export default function TransferPage() {
                             ))}
                           </select>
                         </div>
+
+                        {/* Quick Selection Chips */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                          {templates.slice(0, 4).map((tmpl) => {
+                            const isSelected = selectedTemplateId === tmpl.id;
+                            return (
+                              <button
+                                key={tmpl.id}
+                                type="button"
+                                onClick={() => handleApplyTemplate(tmpl)}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium shrink-0 transition border shadow-2xs ${
+                                  isSelected
+                                    ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
+                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700'
+                                }`}
+                              >
+                                <span>{tmpl.name}</span>
+                                <span className={`text-[10px] px-1 py-0.2 rounded font-mono font-bold ${
+                                  isSelected ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                  ${tmpl.default_amount}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 
                     {/* Method Selection: Phone vs QR */}
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                        Transfer Method
-                      </label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                          Transfer Method
+                        </label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsQrScannerOpen(true)}
+                          className="h-6 text-[11px] font-bold text-indigo-700 hover:bg-indigo-50 flex items-center gap-1 p-1"
+                        >
+                          <Camera className="h-3.5 w-3.5 text-indigo-600" />
+                          <span>Scan QR with Camera</span>
+                        </Button>
+                      </div>
                       <div className="grid grid-cols-2 gap-3">
                         <button
                           type="button"
@@ -1372,23 +1456,80 @@ export default function TransferPage() {
                       </div>
                     </div>
 
+                    {/* Dedicated Camera QR Quick-Scanner Callout Banner */}
+                    <div className="rounded-xl border border-indigo-200/80 bg-gradient-to-r from-indigo-50/90 via-slate-50 to-indigo-50/50 p-3 flex items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm shrink-0">
+                          <Camera className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                            <span>SdeedPay QR Camera Scanner</span>
+                            <span className="rounded bg-indigo-100 text-indigo-700 text-[9px] font-bold px-1.5 py-0.2 border border-indigo-200">
+                              Instant Parse
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500">
+                            Scan peer's SdeedPay QR code or download your personal QR payload
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsQrDownloadOpen(true)}
+                          className="border-indigo-200 text-indigo-700 hover:bg-indigo-100/60 text-xs font-bold shrink-0 shadow-2xs flex items-center gap-1 h-8 px-2.5"
+                        >
+                          <Download className="h-3.5 w-3.5 text-indigo-600" />
+                          <span className="hidden sm:inline">My QR</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => setIsQrScannerOpen(true)}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shrink-0 shadow-sm flex items-center gap-1.5 h-8 px-3"
+                        >
+                          <Scan className="h-3.5 w-3.5" />
+                          <span>Scan Camera</span>
+                        </Button>
+                      </div>
+                    </div>
+
                     {/* Recipient Input */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
                           {method === 'phone' ? 'Recipient Phone Number' : 'Recipient Kamekaz User ID / QR'}
                         </label>
-                        <span className="text-[11px] text-slate-400 font-medium">
-                          {method === 'phone' ? 'e.g. +961 70 889900' : 'e.g. usr_kamekaz_worker_02'}
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsQrScannerOpen(true)}
+                          className="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1"
+                        >
+                          <Camera className="h-3 w-3" />
+                          Scan Code
+                        </button>
                       </div>
-                      <Input
-                        placeholder={method === 'phone' ? '+961 70 889900' : 'usr_kamekaz_worker_02'}
-                        value={recipientInput}
-                        onChange={(e) => setRecipientInput(e.target.value)}
-                        className="font-mono text-sm"
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          placeholder={method === 'phone' ? '+961 70 889900' : 'usr_kamekaz_worker_02'}
+                          value={recipientInput}
+                          onChange={(e) => setRecipientInput(e.target.value)}
+                          className="font-mono text-sm pr-24"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsQrScannerOpen(true)}
+                          className="absolute right-1.5 top-1.5 bottom-1.5 px-2.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold flex items-center gap-1 transition"
+                          title="Open Camera QR Scanner"
+                        >
+                          <Camera className="h-3.5 w-3.5 text-indigo-600" />
+                          <span>Scan</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Quick Select Preset Peers for Testing */}
@@ -2081,8 +2222,19 @@ export default function TransferPage() {
       {activeTab === 'qr' && (
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <div className="md:col-span-6 lg:col-span-5">
-            <Card className="border-slate-200 shadow-sm text-center">
-              <CardHeader className="pb-2 border-b border-slate-100">
+            <Card className="border-slate-200 shadow-sm text-center relative overflow-hidden">
+              {/* Floating Action Button (FAB) at top-right of the card */}
+              <button
+                type="button"
+                onClick={() => setIsQrDownloadOpen(true)}
+                className="absolute top-3.5 right-3.5 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md hover:shadow-indigo-500/25 transition transform hover:scale-105 active:scale-95 group"
+                title="Share & Download My QR Code"
+              >
+                <Share2 className="h-3.5 w-3.5 group-hover:rotate-12 transition-transform" />
+                <span>Share QR</span>
+              </button>
+
+              <CardHeader className="pb-2 border-b border-slate-100 pr-24 text-left">
                 <CardTitle className="text-base font-bold text-slate-900">
                   My SdeedPay QR Code
                 </CardTitle>
@@ -2091,18 +2243,32 @@ export default function TransferPage() {
                 </p>
               </CardHeader>
               <CardContent className="pt-6 space-y-4">
-                <div className="mx-auto w-64 h-64 p-3 bg-white rounded-2xl border-2 border-indigo-100 shadow-inner flex items-center justify-center">
+                {/* QR Code Container with interactive hover overlay */}
+                <div 
+                  onClick={() => setIsQrDownloadOpen(true)}
+                  className="mx-auto w-64 h-64 p-3 bg-white rounded-2xl border-2 border-indigo-100 shadow-inner flex items-center justify-center relative group cursor-pointer hover:border-indigo-400 transition"
+                  title="Click to customize and download your QR code"
+                >
                   {qrLoading ? (
                     <div className="text-xs text-slate-400">Generating QR...</div>
                   ) : qrData ? (
                     <img
                       src={qrData.qr_image_url}
                       alt="SdeedPay QR Code"
-                      className="w-full h-full object-contain rounded-lg"
+                      className="w-full h-full object-contain rounded-lg group-hover:opacity-90 transition"
                     />
                   ) : (
                     <QrCode className="h-24 w-24 text-slate-300" />
                   )}
+
+                  {/* Hover overlay hint */}
+                  <div className="absolute inset-0 bg-indigo-950/40 rounded-2xl opacity-0 group-hover:opacity-100 backdrop-blur-[1px] transition-all flex flex-col items-center justify-center text-white p-3 space-y-1.5">
+                    <div className="h-9 w-9 rounded-full bg-white text-indigo-700 flex items-center justify-center shadow-lg">
+                      <Share2 className="h-4 w-4" />
+                    </div>
+                    <span className="text-xs font-bold drop-shadow">Customize & Share QR</span>
+                    <span className="text-[10px] text-indigo-200">Export PNG / Card / Custom Amount</span>
+                  </div>
                 </div>
 
                 <div className="rounded-xl bg-slate-50 p-3 border border-slate-200 text-left text-xs space-y-1 font-mono">
@@ -2124,14 +2290,35 @@ export default function TransferPage() {
                   </div>
                 </div>
 
-                <Button
-                  onClick={handleCopyQrString}
-                  variant="outline"
-                  className="w-full text-xs font-semibold flex items-center justify-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                >
-                  <Copy className="h-4 w-4" />
-                  {copied ? 'Copied QR Payload to Clipboard!' : 'Copy SdeedPay QR Payload String'}
-                </Button>
+                {/* Prominent Action Button Toolbar */}
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => setIsQrDownloadOpen(true)}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-bold flex items-center justify-center gap-2 h-10 shadow-md hover:shadow-indigo-500/20 transition"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    <span>Share & Download Custom QR</span>
+                  </Button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={() => setIsQrDownloadOpen(true)}
+                      variant="outline"
+                      className="w-full text-xs font-semibold flex items-center justify-center gap-1.5 border-slate-200 hover:bg-slate-50 text-slate-700"
+                    >
+                      <Download className="h-3.5 w-3.5 text-indigo-600" />
+                      <span>Download PNG</span>
+                    </Button>
+                    <Button
+                      onClick={handleCopyQrString}
+                      variant="outline"
+                      className="w-full text-xs font-semibold flex items-center justify-center gap-1.5 border-slate-200 hover:bg-slate-50 text-slate-700"
+                    >
+                      <Copy className="h-3.5 w-3.5 text-slate-600" />
+                      <span>{copied ? 'Copied!' : 'Copy Payload'}</span>
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -2975,6 +3162,21 @@ export default function TransferPage() {
           </div>
         </div>
       )}
+
+      {/* CAMERA QR CODE SCANNER MODAL */}
+      <QrCameraScannerModal
+        isOpen={isQrScannerOpen}
+        onClose={() => setIsQrScannerOpen(false)}
+        onScanSuccess={handleQrScanSuccess}
+        knownUsers={users}
+      />
+
+      {/* GENERATE & DOWNLOAD CUSTOM QR MODAL */}
+      <QrDownloadModal
+        isOpen={isQrDownloadOpen}
+        onClose={() => setIsQrDownloadOpen(false)}
+        user={currentUser}
+      />
     </div>
   );
 }
