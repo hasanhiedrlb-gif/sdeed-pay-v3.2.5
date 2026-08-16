@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique // GLOBAL_USER_ID from kamekaz-auth
+  balance   Decimal  @default(0) @db.Decimal(18, 2)
+  currency  String   @default("LBP")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("wallets")
+}
+
+model Transaction {
+  id          String    @id @default(cuid())
+  referenceId String    @unique // from fleet.os or sdeed - used for idempotency
+  fromUserId  String // Can be "SYSTEM" for topup
+  toUserId    String // Can be "SYSTEM" for payout
+  amount      Decimal   @db.Decimal(18, 2)
+  type        TxType
+  appSource   String // "fleet.os" or "sdeed" or "sdeed-pay"
+  description String?
+  status      TxStatus  @default(DONE)
+  createdAt   DateTime  @default(now())
+
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([appSource])
+  @@index([type])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+model Admin {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(ACCOUNTANT)
+  createdAt    DateTime  @default(now())
+
+  @@map("admins")
+}
+
+enum TxType {
+  TOPUP
+  PAYOUT
+  ORDER_PAYMENT
+  REFUND
+  FEE
+}
+
+enum TxStatus {
+  PENDING
+  DONE
+  FAILED
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ACCOUNTANT
+}

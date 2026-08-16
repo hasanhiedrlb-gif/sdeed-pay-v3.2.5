@@ -1,0 +1,6 @@
+{
+  "name": "sdeedpay v1.1.0 - Smart Payments Bank",
+  "description": "Smart payments bank engine with AI batch allocation, withdrawal liquidity pools, P2P transfers with 2-step SMS OTP, QR code payloads, Kamekaz KYC verification, and admin approval workflows.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

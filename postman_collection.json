@@ -1,0 +1,158 @@
+{
+  "info": {
+    "name": "sdeed-pay API",
+    "description": "Financial Bank & Accounting Ledger API for the platform (kamekaz-auth, fleet.os, sdeed).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000/api" },
+    { "key": "token", "value": "" },
+    { "key": "internalApiKey", "value": "change-me-internal-key" },
+    { "key": "userId", "value": "user_123" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@sdeed.com\",\n  \"password\": \"Admin123!\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallets",
+      "item": [
+        {
+          "name": "Create Wallet (called by kamekaz-auth)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{internalApiKey}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/wallets/create", "host": ["{{baseUrl}}"], "path": ["wallets", "create"] },
+            "body": { "mode": "raw", "raw": "{\n  \"userId\": \"{{userId}}\"\n}" }
+          }
+        },
+        {
+          "name": "List Wallets (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/wallets", "host": ["{{baseUrl}}"], "path": ["wallets"] }
+          }
+        },
+        {
+          "name": "Get Wallet by userId (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/wallets/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wallets", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Top Up (admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/wallets/topup", "host": ["{{baseUrl}}"], "path": ["wallets", "topup"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"amount\": 100000,\n  \"description\": \"Manual admin top up\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Payout (admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/wallets/payout", "host": ["{{baseUrl}}"], "path": ["wallets", "payout"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"amount\": 50000,\n  \"description\": \"Driver payout\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Transfer (called by fleet.os / sdeed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{internalApiKey}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transactions/transfer",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions", "transfer"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromUserId\": \"{{userId}}\",\n  \"toUserId\": \"driver_456\",\n  \"amount\": 25000,\n  \"appSource\": \"fleet.os\",\n  \"referenceId\": \"fleetos-order-98765\",\n  \"type\": \"ORDER_PAYMENT\",\n  \"description\": \"Order #98765 payment\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Transactions / Ledger (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?userId={{userId}}&appSource=fleet.os&type=ORDER_PAYMENT&fromDate=2026-01-01&toDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions"],
+              "query": [
+                { "key": "userId", "value": "{{userId}}" },
+                { "key": "appSource", "value": "fleet.os" },
+                { "key": "type", "value": "ORDER_PAYMENT" },
+                { "key": "fromDate", "value": "2026-01-01" },
+                { "key": "toDate", "value": "2026-12-31" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Integration",
+      "item": [
+        {
+          "name": "Get Balance (public, used by fleet.os)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/integration/balance/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["integration", "balance", "{{userId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

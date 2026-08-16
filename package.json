@@ -1,0 +1,24 @@
+{
+  "name": "sdeed-pay",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/admin",
+    "build": "npm run build --workspace=apps/admin",
+    "start": "npm run start --workspace=apps/admin",
+    "lint": "npm run lint --workspace=apps/admin",
+    "dev:api": "npm run start:dev --workspace=apps/api",
+    "dev:admin": "npm run dev --workspace=apps/admin",
+    "build:api": "npm run build --workspace=apps/api",
+    "build:admin": "npm run build --workspace=apps/admin"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "lucide-react": "^1.31.0"
+  }
+}
