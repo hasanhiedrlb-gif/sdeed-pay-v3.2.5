@@ -134,7 +134,7 @@ export default function DepositRequestPage() {
           </div>
           <h1 className="text-2xl font-bold text-white">Deposit & Fund Points</h1>
           <p className="text-xs text-slate-300 mt-0.5">
-            P2P liquidity matching with worker cashouts. 1 Point = $1.00 USD.
+            P2P liquidity matching with worker cashouts. 10 Point = $1.00 USD.
           </p>
         </div>
 
@@ -143,9 +143,12 @@ export default function DepositRequestPage() {
             Advertiser Balance
           </span>
           <div className="text-3xl font-extrabold text-indigo-300 font-mono mt-0.5">
-            ${currentUser?.points_balance.toFixed(2)}{' '}
+            {Number(currentUser?.points_balance || 0).toLocaleString()}{' '}
             <span className="text-xs font-normal text-slate-300">pts</span>
           </div>
+          <p className="text-xs font-medium text-indigo-200/90 font-mono">
+            ≈ ${((currentUser?.points_balance || 0) / 10).toFixed(2)} USD
+          </p>
           <span className="text-[11px] text-slate-400">Available Campaign Credits</span>
         </div>
       </div>
@@ -164,9 +167,14 @@ export default function DepositRequestPage() {
               <form onSubmit={handleDepositSubmit} className="space-y-4">
                 {/* Amount */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                    Deposit Amount (USD)
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                      Deposit Amount (10 Point = $1.00 USD)
+                    </label>
+                    <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                      Rate: 10 Pts = $1.00
+                    </span>
+                  </div>
                   <div className="grid grid-cols-4 gap-1.5 mb-2">
                     {PRESET_AMOUNTS.map((amt) => {
                       const isSelected = amount === amt;
@@ -181,7 +189,10 @@ export default function DepositRequestPage() {
                               : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                           }`}
                         >
-                          ${amt}
+                          <div>${amt}</div>
+                          <div className="text-[10px] font-normal text-slate-500 font-mono">
+                            {amt * 10} pts
+                          </div>
                         </button>
                       );
                     })}
@@ -198,9 +209,12 @@ export default function DepositRequestPage() {
                       required
                     />
                   </div>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Must be in increments of $10 (10, 20, 30, 40, 50, 70, 100...)
-                  </p>
+                  <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500">Increments of $10</span>
+                    <span className="font-semibold text-indigo-600 font-mono">
+                      Credits {amount * 10} pts to advertiser balance
+                    </span>
+                  </div>
                 </div>
 
                 {/* Method */}
@@ -251,7 +265,9 @@ export default function DepositRequestPage() {
                   disabled={submitting}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5"
                 >
-                  {submitting ? 'Running AI Optimizer...' : `Submit Request for $${amount} USD`}
+                  {submitting
+                    ? 'Running AI Optimizer...'
+                    : `Submit Request for $${amount} USD (${amount * 10} pts)`}
                 </Button>
               </form>
             </CardContent>

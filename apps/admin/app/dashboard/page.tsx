@@ -63,7 +63,7 @@ export default function DashboardPage() {
             </h1>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
               Decentralized P2P cash settlements between couriers, drivers, and advertising
-              agencies powered by the Smart AI Combination Optimizer (1 Point = 1 USD).
+              agencies powered by the Smart AI Combination Optimizer (10 Point = $1.00 USD).
             </p>
           </div>
 

@@ -35,7 +35,7 @@ export interface SpUser {
   id: string; // Kamekaz user_id
   name: string;
   role: UserRole;
-  points_balance: number; // 1 Point = 1 USD
+  points_balance: number; // 10 Point = $1.00 USD (1 Point = $0.10 USD)
   phone: string;
   wallet_number?: string;
   preferred_method?: PaymentMethod;
@@ -136,9 +136,52 @@ export interface SpDepositClaim {
 
 export const PLATFORM_USER_ID = 'usr_kamekaz_platform_treasury';
 
+export type TemplateCategory = 'team' | 'vendor' | 'personal' | 'contractor' | 'operations';
+
+export interface FrequentTransferTemplate {
+  id: string;
+  name: string;
+  recipient_input: string;
+  recipient_name: string;
+  method: P2PTransferMethod;
+  default_amount: number;
+  category: TemplateCategory;
+  note?: string;
+  created_at: string;
+  last_used_at?: string;
+  use_count: number;
+}
+
 export function getColorTagForAmount(amount: number): ColorTag {
   if (amount <= 10) return 'green';
   if (amount === 20) return 'blue';
   if (amount === 30 || amount === 40) return 'orange';
   return 'red'; // 50+
 }
+
+// Points and USD Conversion Protocol: 10 Point = $1.00 USD
+export const POINTS_PER_USD = 10;
+export const USD_PER_POINT = 0.1;
+
+export function pointsToUsd(points: number): number {
+  return Number((points / POINTS_PER_USD).toFixed(2));
+}
+
+export function usdToPoints(usd: number): number {
+  return Math.round(usd * POINTS_PER_USD);
+}
+
+export function formatPoints(points: number): string {
+  return `${Number(points).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} pts`;
+}
+
+export function formatUsdWithPoints(usd: number): string {
+  const pts = usdToPoints(usd);
+  return `$${usd.toFixed(2)} USD (${pts.toLocaleString()} pts)`;
+}
+
+export function formatPointsWithUsd(points: number): string {
+  const usd = pointsToUsd(points);
+  return `${Number(points).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} pts ($${usd.toFixed(2)} USD)`;
+}
+

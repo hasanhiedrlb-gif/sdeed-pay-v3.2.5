@@ -73,7 +73,7 @@ export default function SdeedPayHeader() {
               v1.1.0 Smart Bank
             </span>
           </div>
-          <p className="text-xs text-slate-500">Kamekaz Shared Ledger • 1 Point = $1.00 USD</p>
+          <p className="text-xs text-slate-500">Kamekaz Shared Ledger • 10 Point = $1.00 USD</p>
         </div>
       </div>
 
@@ -111,7 +111,8 @@ export default function SdeedPayHeader() {
                 </span>
               </div>
               <p className="font-mono text-[11px] text-slate-500">
-                {currentUser?.id} • <strong className="text-slate-900">${currentUser?.points_balance.toFixed(2)}</strong> pts
+                {currentUser?.id} • <strong className="text-slate-900">{Number(currentUser?.points_balance || 0).toLocaleString()}</strong> pts{' '}
+                <span className="text-slate-400">(${(Number(currentUser?.points_balance || 0) / 10).toFixed(2)})</span>
               </p>
             </div>
             <ChevronDown className="h-4 w-4 text-slate-400" />
@@ -159,7 +160,10 @@ export default function SdeedPayHeader() {
                             {badge.label}
                           </span>
                           <p className="font-mono text-[11px] font-bold text-slate-900">
-                            ${u.points_balance.toFixed(2)}
+                            {Number(u.points_balance).toLocaleString()} pts
+                          </p>
+                          <p className="font-mono text-[10px] text-slate-400">
+                            ${(u.points_balance / 10).toFixed(2)} USD
                           </p>
                         </div>
                       </button>

@@ -183,7 +183,7 @@ export default function WalletPage() {
             {currentUser?.name || 'Worker Account'}
           </h1>
           <p className="text-xs text-slate-300 mt-0.5">
-            Earnings from deliveries & tasks across Kamekaz ecosystem (1 Point = 1 USD)
+            Earnings from deliveries & tasks across Kamekaz ecosystem (10 Point = $1.00 USD)
           </p>
         </div>
 
@@ -193,9 +193,12 @@ export default function WalletPage() {
               Available Points Balance
             </span>
             <div className="text-3xl font-extrabold text-emerald-400 font-mono mt-0.5">
-              ${currentUser?.points_balance.toFixed(2)}{' '}
+              {Number(currentUser?.points_balance || 0).toLocaleString()}{' '}
               <span className="text-xs font-normal text-slate-300">pts</span>
             </div>
+            <p className="text-xs font-medium text-emerald-300/90 font-mono">
+              ≈ ${((currentUser?.points_balance || 0) / 10).toFixed(2)} USD
+            </p>
             <div className="mt-1 flex items-center justify-end gap-1">
               {currentUser?.kyc_status === 'verified' ? (
                 <span className="inline-flex items-center gap-1 rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-500/30">
@@ -231,9 +234,14 @@ export default function WalletPage() {
               <form onSubmit={handleWithdrawSubmit} className="space-y-4">
                 {/* Amount Selection */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                    Select Amount (USD / Points)
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                      Select Amount (10 Point = $1.00 USD)
+                    </label>
+                    <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                      Rate: 10 Pts = $1.00
+                    </span>
+                  </div>
                   <div className="grid grid-cols-3 gap-2 mb-2">
                     {QUICK_AMOUNTS.map((amt) => {
                       const isSelected = amount === amt;
@@ -242,13 +250,16 @@ export default function WalletPage() {
                           type="button"
                           key={amt}
                           onClick={() => setAmount(amt)}
-                          className={`rounded-lg border py-2 text-center text-sm font-bold transition ${
+                          className={`rounded-lg border py-2 text-center text-xs font-bold transition ${
                             isSelected
                               ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm'
                               : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                           }`}
                         >
-                          ${amt}
+                          <div>${amt} USD</div>
+                          <div className="text-[10px] font-normal text-slate-500 font-mono">
+                            {amt * 10} pts
+                          </div>
                         </button>
                       );
                     })}
@@ -265,9 +276,12 @@ export default function WalletPage() {
                       required
                     />
                   </div>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Rule: Must be &gt;= $10 and divisible by 10 (10, 20, 30, 40, 50, etc.)
-                  </p>
+                  <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500">Must be multiple of $10</span>
+                    <span className="font-semibold text-indigo-600 font-mono">
+                      Deducts {amount * 10} pts from balance
+                    </span>
+                  </div>
                 </div>
 
                 {/* Method Selection */}
@@ -386,7 +400,9 @@ export default function WalletPage() {
                   disabled={submitting}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5"
                 >
-                  {submitting ? 'Submitting into Pool...' : `Submit $${amount} Withdrawal to Pool`}
+                  {submitting
+                    ? 'Submitting into Pool...'
+                    : `Submit $${amount} USD (${amount * 10} pts) Withdrawal to Pool`}
                 </Button>
               </form>
             </CardContent>

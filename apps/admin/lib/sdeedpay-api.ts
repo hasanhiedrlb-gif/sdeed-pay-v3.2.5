@@ -18,8 +18,23 @@ export class SdeedpayApiError extends Error {
   }
 }
 
+export const API_BASE_UI =
+  process.env.NEXT_PUBLIC_API_BASE_UI || 'https://sdeed-pay-v3-2-5.vercel.app';
+
+export const KAMEKAZ_API_URL =
+  process.env.NEXT_PUBLIC_KAMEKAZ_API || 'https://kamekaz-v3-2-5.vercel.app';
+
+export const SDEED_API_URL =
+  process.env.NEXT_PUBLIC_SDEED_API || 'https://sdeed-v3-2-5.vercel.app';
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
+  const fullUrl = url.startsWith('http')
+    ? url
+    : url.startsWith('/api')
+    ? url
+    : `${API_BASE_UI}${url.startsWith('/') ? '' : '/'}${url}`;
+
+  const res = await fetch(fullUrl, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

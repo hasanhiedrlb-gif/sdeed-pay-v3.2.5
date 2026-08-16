@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { sdeedpayDb } from '@/lib/sdeedpay-store';
 
+const KAMEKAZ_API_URL =
+  process.env.NEXT_PUBLIC_KAMEKAZ_API || 'https://kamekaz-v3-2-5.vercel.app';
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ user_id: string }> },
@@ -15,6 +18,7 @@ export async function GET(
       name: user?.name || user_id,
       kyc_status,
       app: 'kamekaz',
+      kamekaz_api: KAMEKAZ_API_URL,
     });
   } catch (error: any) {
     return NextResponse.json(

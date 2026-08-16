@@ -10,6 +10,9 @@ import {
   PLATFORM_USER_ID,
   getColorTagForAmount,
   CombinationItem,
+  usdToPoints,
+  pointsToUsd,
+  POINTS_PER_USD,
 } from './sdeedpay-types';
 import { runAiSuggestionEngine } from './ai-suggestion-engine';
 import { transactionsStore, TransactionRecord } from './db';
@@ -34,7 +37,7 @@ function initializeSeedData(): SdeedpayGlobalState {
       id: 'usr_kamekaz_worker_01',
       name: 'Rami Al-Hassan (Courier)',
       role: 'worker',
-      points_balance: 340.0, // 340 USD
+      points_balance: 3400.0, // 3,400 Points = $340.00 USD (10 Point = $1.00 USD)
       phone: '+96170112233',
       wallet_number: '+96170112233',
       preferred_method: 'omt',
@@ -44,7 +47,7 @@ function initializeSeedData(): SdeedpayGlobalState {
       id: 'usr_kamekaz_worker_02',
       name: 'Nour Khoury (Driver)',
       role: 'worker',
-      points_balance: 180.0,
+      points_balance: 1800.0, // 1,800 Points = $180.00 USD
       phone: '+96171445566',
       wallet_number: '+96171445566',
       preferred_method: 'wish',
@@ -54,7 +57,7 @@ function initializeSeedData(): SdeedpayGlobalState {
       id: 'usr_kamekaz_worker_03',
       name: 'Charbel Haddad (Deliveries)',
       role: 'worker',
-      points_balance: 90.0,
+      points_balance: 900.0, // 900 Points = $90.00 USD
       phone: '+96176889900',
       wallet_number: '+96176889900',
       preferred_method: 'haram',
@@ -64,7 +67,7 @@ function initializeSeedData(): SdeedpayGlobalState {
       id: 'usr_kamekaz_worker_04',
       name: 'Karim Mansour (Field Ops)',
       role: 'worker',
-      points_balance: 420.0,
+      points_balance: 4200.0, // 4,200 Points = $420.00 USD
       phone: '+96178990011',
       wallet_number: '+96178990011',
       preferred_method: 'shamcash',
@@ -74,7 +77,7 @@ function initializeSeedData(): SdeedpayGlobalState {
       id: 'adv_kamekaz_tech_01',
       name: 'ByteCraft Media Agency',
       role: 'advertiser',
-      points_balance: 1250.0,
+      points_balance: 12500.0, // 12,500 Points = $1,250.00 USD
       phone: '+96101998877',
       wallet_number: '+96101998877',
       preferred_method: 'omt',
@@ -84,7 +87,7 @@ function initializeSeedData(): SdeedpayGlobalState {
       id: 'adv_kamekaz_brands_02',
       name: 'Cedar Commerce Ltd',
       role: 'advertiser',
-      points_balance: 600.0,
+      points_balance: 6000.0, // 6,000 Points = $600.00 USD
       phone: '+96103554433',
       wallet_number: '+96103554433',
       preferred_method: 'wish',
@@ -103,7 +106,7 @@ function initializeSeedData(): SdeedpayGlobalState {
       id: PLATFORM_USER_ID,
       name: 'SdeedPay Platform Treasury (1:9 Commission)',
       role: 'platform',
-      points_balance: 85.0,
+      points_balance: 850.0, // 850 Points = $85.00 USD
       phone: '+96101999999',
       wallet_number: 'TREASURY-LBP-USD-01',
       kyc_status: 'verified',
@@ -391,6 +394,109 @@ function initializeSeedData(): SdeedpayGlobalState {
       created_at: new Date(now - 6 * day - 8 * hour).toISOString(),
       completed_at: new Date(now - 6 * day - (8 * hour - minute)).toISOString(),
     },
+    // Seed previous week transfers for comparative trend analytics
+    {
+      id: 'trf_p2p_seed_09',
+      from_user_id: 'usr_kamekaz_worker_01',
+      to_user_id: 'usr_kamekaz_worker_02',
+      to_phone: '+96171445566',
+      amount: 20,
+      method: 'phone',
+      status: 'completed',
+      otp_code: '112233',
+      from_user_name: 'Rami Al-Hassan (Courier)',
+      to_user_name: 'Nour Khoury (Driver)',
+      reference_id: 'P2P-96171445566-20USD-PW',
+      created_at: new Date(now - 7 * day - 3 * hour).toISOString(),
+      completed_at: new Date(now - 7 * day - (3 * hour - minute)).toISOString(),
+    },
+    {
+      id: 'trf_p2p_seed_10',
+      from_user_id: 'usr_kamekaz_worker_02',
+      to_user_id: 'usr_kamekaz_worker_03',
+      amount: 30,
+      method: 'qr',
+      status: 'completed',
+      otp_code: '445566',
+      from_user_name: 'Nour Khoury (Driver)',
+      to_user_name: 'Charbel Haddad (Deliveries)',
+      reference_id: 'P2P-QR-CHARBEL-30USD-PW',
+      created_at: new Date(now - 8 * day - 5 * hour).toISOString(),
+      completed_at: new Date(now - 8 * day - (5 * hour - minute)).toISOString(),
+    },
+    {
+      id: 'trf_p2p_seed_11',
+      from_user_id: 'usr_kamekaz_worker_03',
+      to_user_id: 'usr_kamekaz_worker_01',
+      to_phone: '+96170112233',
+      amount: 25,
+      method: 'phone',
+      status: 'completed',
+      otp_code: '778899',
+      from_user_name: 'Charbel Haddad (Deliveries)',
+      to_user_name: 'Rami Al-Hassan (Courier)',
+      reference_id: 'P2P-96170112233-25USD-PW',
+      created_at: new Date(now - 9 * day - 2 * hour).toISOString(),
+      completed_at: new Date(now - 9 * day - (2 * hour - minute)).toISOString(),
+    },
+    {
+      id: 'trf_p2p_seed_12',
+      from_user_id: 'adv_kamekaz_tech_01',
+      to_user_id: 'usr_kamekaz_worker_01',
+      amount: 45,
+      method: 'qr',
+      status: 'completed',
+      otp_code: '334455',
+      from_user_name: 'ByteCraft Media Agency',
+      to_user_name: 'Rami Al-Hassan (Courier)',
+      reference_id: 'P2P-QR-RAMI-45USD-PW',
+      created_at: new Date(now - 10 * day - 4 * hour).toISOString(),
+      completed_at: new Date(now - 10 * day - (4 * hour - minute)).toISOString(),
+    },
+    {
+      id: 'trf_p2p_seed_13',
+      from_user_id: 'usr_kamekaz_worker_01',
+      to_user_id: 'usr_kamekaz_worker_03',
+      to_phone: '+96176889900',
+      amount: 15,
+      method: 'phone',
+      status: 'completed',
+      otp_code: '667788',
+      from_user_name: 'Rami Al-Hassan (Courier)',
+      to_user_name: 'Charbel Haddad (Deliveries)',
+      reference_id: 'P2P-96176889900-15USD-PW',
+      created_at: new Date(now - 11 * day - 6 * hour).toISOString(),
+      completed_at: new Date(now - 11 * day - (6 * hour - minute)).toISOString(),
+    },
+    {
+      id: 'trf_p2p_seed_14',
+      from_user_id: 'usr_kamekaz_worker_02',
+      to_user_id: 'usr_kamekaz_worker_01',
+      amount: 35,
+      method: 'qr',
+      status: 'completed',
+      otp_code: '990011',
+      from_user_name: 'Nour Khoury (Driver)',
+      to_user_name: 'Rami Al-Hassan (Courier)',
+      reference_id: 'P2P-QR-RAMI-35USD-PW',
+      created_at: new Date(now - 12 * day - 1 * hour).toISOString(),
+      completed_at: new Date(now - 12 * day - (1 * hour - minute)).toISOString(),
+    },
+    {
+      id: 'trf_p2p_seed_15',
+      from_user_id: 'usr_kamekaz_worker_01',
+      to_user_id: 'usr_kamekaz_worker_02',
+      to_phone: '+96171445566',
+      amount: 25,
+      method: 'phone',
+      status: 'completed',
+      otp_code: '223344',
+      from_user_name: 'Rami Al-Hassan (Courier)',
+      to_user_name: 'Nour Khoury (Driver)',
+      reference_id: 'P2P-96171445566-25USD-PW2',
+      created_at: new Date(now - 13 * day - 5 * hour).toISOString(),
+      completed_at: new Date(now - 13 * day - (5 * hour - minute)).toISOString(),
+    },
   ];
 
   return {
@@ -497,15 +603,16 @@ export const sdeedpayDb = {
     }
 
     // STEP 2: CALL sdeed API: GET /api/sdeed/balance/{user_id}
+    const pointsRequired = usdToPoints(amount);
     const user = state.users.find((u) => u.id === userId);
-    if (!user || user.points_balance < amount) {
+    if (!user || user.points_balance < pointsRequired) {
       throw new Error(
-        `Insufficient points balance. Current balance: ${user ? user.points_balance : 0} pts, requested: $${amount}.`,
+        `Insufficient points balance. Current balance: ${user ? user.points_balance : 0} pts ($${pointsToUsd(user ? user.points_balance : 0).toFixed(2)} USD), requested: $${amount} USD (${pointsRequired} pts) at 10 Point = $1.00 USD.`,
       );
     }
 
     // Deduct points into escrow lock
-    user.points_balance = Number((user.points_balance - amount).toFixed(2));
+    user.points_balance = Number((user.points_balance - pointsRequired).toFixed(2));
 
     // STEP 3: Create withdrawal request. status='in_pool'
     const colorTag = getColorTagForAmount(amount);
@@ -556,10 +663,11 @@ export const sdeedpayDb = {
       throw new Error('Transfer amount must be a positive integer ($1 or more)');
     }
 
-    // STEP 2: CALL sdeed API: GET /api/sdeed/balance/{from_user_id}. Check balance
-    if (sender.points_balance < numAmount) {
+    // STEP 2: CALL sdeed API: GET /api/sdeed/balance/{from_user_id}. Check balance (10 Point = $1.00 USD)
+    const pointsToTransfer = usdToPoints(numAmount);
+    if (sender.points_balance < pointsToTransfer) {
       throw new Error(
-        `Insufficient points balance. Current balance: ${sender.points_balance} pts ($${sender.points_balance}), requested: $${numAmount}.`,
+        `Insufficient points balance. Current balance: ${sender.points_balance} pts ($${pointsToUsd(sender.points_balance).toFixed(2)} USD), requested: $${numAmount} USD (${pointsToTransfer} pts) at 10 Point = $1.00 USD.`,
       );
     }
 
@@ -651,15 +759,16 @@ export const sdeedpayDb = {
       throw new Error('Sender or Recipient user account not found');
     }
 
-    if (sender.points_balance < transfer.amount) {
-      throw new Error(`Insufficient funds: sender balance is ${sender.points_balance} pts`);
+    const pointsToTransfer = usdToPoints(transfer.amount);
+    if (sender.points_balance < pointsToTransfer) {
+      throw new Error(
+        `Insufficient funds: sender balance is ${sender.points_balance} pts ($${pointsToUsd(sender.points_balance).toFixed(2)} USD), required: ${pointsToTransfer} pts ($${transfer.amount} USD)`,
+      );
     }
 
-    // STEP: CALL sdeedpay: deduct from_user_id
-    sender.points_balance = Number((sender.points_balance - transfer.amount).toFixed(2));
-
-    // STEP: CALL sdeedpay: add to_user_id
-    recipient.points_balance = Number((recipient.points_balance + transfer.amount).toFixed(2));
+    // STEP: CALL sdeedpay: deduct points from sender, add points to recipient (10 Point = $1.00 USD)
+    sender.points_balance = Number((sender.points_balance - pointsToTransfer).toFixed(2));
+    recipient.points_balance = Number((recipient.points_balance + pointsToTransfer).toFixed(2));
 
     // Update transfer status
     transfer.status = 'completed';
@@ -943,10 +1052,12 @@ export const sdeedpayDb = {
       const req = state.withdrawals.find((r) => r.id === claim.withdrawal_request_id);
       if (req) req.status = 'paid';
 
-      // Credit advertiser points
+      // Credit advertiser points (10 Point = $1.00 USD)
       const advertiser = state.users.find((u) => u.id === claim.advertiser_id);
       if (advertiser) {
-        advertiser.points_balance = Number((advertiser.points_balance + claim.amount).toFixed(2));
+        advertiser.points_balance = Number(
+          (advertiser.points_balance + usdToPoints(claim.amount)).toFixed(2),
+        );
       }
     }
 
@@ -965,10 +1076,12 @@ export const sdeedpayDb = {
     const req = state.withdrawals.find((r) => r.id === claim.withdrawal_request_id);
     if (req) req.status = 'paid';
 
-    // Credit advertiser balance
+    // Credit advertiser balance (10 Point = $1.00 USD)
     const advertiser = state.users.find((u) => u.id === claim.advertiser_id);
     if (advertiser) {
-      advertiser.points_balance = Number((advertiser.points_balance + claim.amount).toFixed(2));
+      advertiser.points_balance = Number(
+        (advertiser.points_balance + usdToPoints(claim.amount)).toFixed(2),
+      );
     }
 
     return claim;
