@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table';
 import { sdeedpayApi } from '@/lib/sdeedpay-api';
 import { SpDepositClaim } from '@/lib/sdeedpay-types';
-import { ReceiptText, Download, Filter, Search, RefreshCw, ShieldCheck } from 'lucide-react';
+import { ReceiptText, Download, Search, RefreshCw, ShieldCheck } from 'lucide-react';
+import { CountUp } from '@/components/CountUp';
 
 export default function TransactionsPage() {
   const [claims, setClaims] = useState<SpDepositClaim[]>([]);
@@ -22,11 +24,7 @@ export default function TransactionsPage() {
   async function loadTransactions() {
     setLoading(true);
     try {
-      // Fetch pool and batches to reconstruct all settled transfers
-      const pool = await sdeedpayApi.getPool();
       const batches = await sdeedpayApi.getBatches();
-
-      // Collect all cards across approved batches
       const allCards: SpDepositClaim[] = [];
       for (const b of batches) {
         if (b.status === 'approved' || b.status === 'completed') {
@@ -101,34 +99,39 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 text-white shadow-md">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="rounded-md bg-indigo-500/20 px-2 py-0.5 text-xs font-semibold text-indigo-300 border border-indigo-500/30">
-              Audit & Treasury Ledger
-            </span>
-            <span className="text-xs text-slate-400 font-mono">1 Pt = 1 USD</span>
-          </div>
-          <h1 className="text-2xl font-bold text-white">System Settlement Ledger</h1>
-          <p className="text-xs text-slate-300 mt-0.5">
-            Cryptographically logged P2P transfer claims, beneficiary cards, and 1:9 platform commission routing.
-          </p>
-        </div>
+      <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-r from-blue-950/70 via-slate-900/80 to-blue-950/70 p-7 text-[#F8FAFC] shadow-2xl backdrop-blur-[24px]">
+        <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-[#4F8AFF]/20 blur-[90px]" />
 
-        <Button
-          onClick={exportCsv}
-          className="bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs h-9"
-        >
-          <Download className="h-4 w-4 mr-1.5" />
-          Export Ledger CSV
-        </Button>
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="rounded-full bg-[#4F8AFF]/20 px-3 py-0.5 text-xs font-bold text-[#38BDF8] border border-[#4F8AFF]/40 shadow-sm">
+                Audit & Treasury Ledger
+              </span>
+              <span className="text-xs text-[#94A3B8] font-mono">10 Pts = $1.00 USD</span>
+            </div>
+            <h1 className="text-2xl font-bold text-[#F8FAFC]">System Settlement Ledger</h1>
+            <p className="text-xs text-[#94A3B8] mt-0.5">
+              Cryptographically logged P2P transfer claims, beneficiary cards, and 1:9 platform commission routing.
+            </p>
+          </div>
+
+          <Button
+            onClick={exportCsv}
+            variant="outline"
+            className="font-bold text-xs h-10 px-4"
+          >
+            <Download className="h-4 w-4 mr-1.5" />
+            Export Ledger CSV
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/[0.06] backdrop-blur-[20px] p-4 shadow-xl">
         <div className="flex flex-wrap items-center gap-2">
           <select
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none"
+            className="rounded-xl border border-white/15 bg-slate-950/80 px-3.5 py-2 text-xs font-semibold text-[#F8FAFC] focus:outline-none focus:border-[#4F8AFF] focus:ring-1 focus:ring-[#4F8AFF]"
             value={methodFilter}
             onChange={(e) => setMethodFilter(e.target.value)}
           >
@@ -142,105 +145,87 @@ export default function TransactionsPage() {
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#94A3B8]" />
             <Input
               placeholder="Search reference, card, batch..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 pl-8 text-xs"
+              className="h-9 pl-9 text-xs"
             />
           </div>
-          <Button size="sm" variant="outline" onClick={loadTransactions} className="h-8 text-xs">
-            <RefreshCw className="h-3 w-3" />
+          <Button size="sm" variant="outline" onClick={loadTransactions} className="h-9 w-9 p-0">
+            <RefreshCw className="h-3.5 w-3.5 text-[#94A3B8]" />
           </Button>
         </div>
       </div>
 
       {/* Table */}
-      <Card className="border-slate-200 shadow-sm overflow-hidden">
+      <Card className="overflow-hidden">
         <CardContent className="p-0">
           {loading ? (
-            <p className="p-8 text-center text-xs text-slate-400">Loading ledger records...</p>
+            <p className="p-8 text-center text-xs text-[#94A3B8]">Loading ledger records...</p>
           ) : filtered.length === 0 ? (
             <div className="p-12 text-center">
-              <ReceiptText className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-              <p className="text-sm font-semibold text-slate-700">No settled claims match criteria</p>
-              <p className="text-xs text-slate-400 mt-1">
+              <ReceiptText className="mx-auto h-8 w-8 text-[#94A3B8] mb-2" />
+              <p className="text-sm font-semibold text-[#F8FAFC]">No settled claims match criteria</p>
+              <p className="text-xs text-[#94A3B8] mt-1">
                 Approve batches in the Admin Batches portal to generate live settlement records.
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-slate-200 bg-slate-50 font-bold uppercase text-slate-500 text-[10px]">
-                  <tr>
-                    <th className="p-3.5">Claim / Card ID</th>
-                    <th className="p-3.5">Batch Reference</th>
-                    <th className="p-3.5">Amount (USD)</th>
-                    <th className="p-3.5">Method</th>
-                    <th className="p-3.5">Beneficiary / Wallet</th>
-                    <th className="p-3.5">Type</th>
-                    <th className="p-3.5">Status</th>
-                    <th className="p-3.5">Reference ID</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filtered.map((claim) => (
-                    <tr key={claim.id} className="hover:bg-slate-50/80 transition">
-                      <td className="p-3.5 font-mono text-slate-800">{claim.id}</td>
-                      <td className="p-3.5 font-mono text-slate-500">{claim.batch_id}</td>
-                      <td className="p-3.5 font-black font-mono text-slate-900 text-sm">
-                        ${claim.amount}
-                      </td>
-                      <td className="p-3.5">
-                        <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-700">
-                          {claim.method}
+            <Table>
+              <THead>
+                <TR>
+                  <TH>Claim / Card ID</TH>
+                  <TH>Batch Reference</TH>
+                  <TH>Amount (USD)</TH>
+                  <TH>Method</TH>
+                  <TH>Beneficiary / Wallet</TH>
+                  <TH>Type</TH>
+                  <TH>Status</TH>
+                  <TH>Reference ID</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {filtered.map((claim) => (
+                  <TR key={claim.id} className="hover:bg-white/[0.06] transition">
+                    <TD className="font-mono text-[#38BDF8]">{claim.id}</TD>
+                    <TD className="font-mono text-[#94A3B8]">{claim.batch_id}</TD>
+                    <TD className="font-black font-mono text-emerald-400 text-sm">
+                      ${claim.amount}
+                    </TD>
+                    <TD>
+                      <span className="rounded-lg bg-white/10 border border-white/15 px-2 py-0.5 text-[10px] font-bold uppercase text-[#F8FAFC]">
+                        {claim.method}
+                      </span>
+                    </TD>
+                    <TD>
+                      <div className="font-semibold text-[#F8FAFC]">{claim.beneficiary_full_name || 'Direct Payout'}</div>
+                      <div className="font-mono text-[10px] text-[#94A3B8]">{claim.wallet_number}</div>
+                    </TD>
+                    <TD>
+                      {claim.is_platform_commission ? (
+                        <span className="rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[9px] font-bold">
+                          1:9 Commission
                         </span>
-                      </td>
-                      <td className="p-3.5">
-                        <div className="font-semibold text-slate-800">
-                          {claim.beneficiary_full_name || 'Masked Beneficiary'}
-                        </div>
-                        <div className="font-mono text-[10px] text-slate-500">
-                          {claim.wallet_number} ({claim.governorate})
-                        </div>
-                      </td>
-                      <td className="p-3.5">
-                        {claim.is_platform_commission ? (
-                          <span className="inline-flex items-center gap-1 rounded bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-800">
-                            <ShieldCheck className="h-3 w-3" />
-                            Platform Fee (1:9)
-                          </span>
-                        ) : (
-                          <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">
-                            P2P Settlement
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3.5">
-                        <Badge
-                          variant={
-                            claim.status === 'matched'
-                              ? 'success'
-                              : claim.status === 'disputed'
-                              ? 'danger'
-                              : claim.status === 'advertiser_sent'
-                              ? 'warning'
-                              : 'default'
-                          }
-                          className="uppercase text-[10px] font-bold"
-                        >
-                          {claim.status}
-                        </Badge>
-                      </td>
-                      <td className="p-3.5 font-mono text-slate-600">
-                        {claim.advertiser_reference || 'Pending Ref'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      ) : (
+                        <span className="rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 text-[9px] font-bold">
+                          Direct Settlement
+                        </span>
+                      )}
+                    </TD>
+                    <TD>
+                      <Badge variant="success" className="text-[10px] font-bold">
+                        {claim.status}
+                      </Badge>
+                    </TD>
+                    <TD className="font-mono text-xs text-[#94A3B8]">
+                      {claim.advertiser_reference || 'REF-SETTLED'}
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
         </CardContent>
       </Card>

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { walletsStore, transactionsStore } from '@/lib/db';
+import { walletsStore, SadeedDbService } from '@/lib/db';
 
 export async function POST(request: Request) {
   try {
@@ -34,20 +34,17 @@ export async function POST(request: Request) {
     wallet.balance = newBal;
     wallet.updatedAt = new Date().toISOString();
 
-    const transaction = {
-      id: 'tx-' + Math.random().toString(36).slice(2, 9),
+    const transaction = SadeedDbService.logTransaction({
+      walletId: wallet.id,
       referenceId: `PAYOUT-${userId}-${Date.now()}`,
       fromUserId: userId,
       toUserId: 'SYSTEM',
-      amount: numAmount.toFixed(2),
-      type: 'PAYOUT' as const,
+      amount: numAmount,
+      type: 'PAYOUT',
       appSource: 'sdeed-pay',
       description: description || 'Admin Payout',
-      status: 'DONE' as const,
-      createdAt: new Date().toISOString(),
-    };
-
-    transactionsStore.unshift(transaction);
+      status: 'DONE',
+    });
 
     return NextResponse.json({
       wallet,

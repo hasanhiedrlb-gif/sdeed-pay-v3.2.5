@@ -57,6 +57,7 @@ export function QrDownloadModal({ isOpen, onClose, user }: QrDownloadModalProps)
   const [sessionNonce, setSessionNonce] = useState<string>(() => Math.random().toString(36).substring(2, 9));
   const [issuedAt, setIssuedAt] = useState<number>(() => Date.now());
   const [isRefreshedToast, setIsRefreshedToast] = useState(false);
+  const [refreshReason, setRefreshReason] = useState<'expired' | 'manual'>('manual');
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -75,14 +76,15 @@ export function QrDownloadModal({ isOpen, onClose, user }: QrDownloadModalProps)
   };
 
   // Manual or automatic refresh of security token & timer
-  const handleRefreshPayload = () => {
+  const handleRefreshPayload = (reason: 'expired' | 'manual' = 'manual') => {
     setSessionNonce(Math.random().toString(36).substring(2, 9));
     const now = Date.now();
     setIssuedAt(now);
     setTimeLeft(QR_EXPIRATION_SECONDS);
+    setRefreshReason(reason);
     loadQrFromApi();
     setIsRefreshedToast(true);
-    setTimeout(() => setIsRefreshedToast(false), 3000);
+    setTimeout(() => setIsRefreshedToast(false), 3500);
   };
 
   useEffect(() => {
@@ -94,6 +96,7 @@ export function QrDownloadModal({ isOpen, onClose, user }: QrDownloadModalProps)
       setCustomAmount('');
       setCustomMemo('');
       setDownloadSuccess(false);
+      setIsRefreshedToast(false);
     }
   }, [isOpen, user]);
 
@@ -104,8 +107,7 @@ export function QrDownloadModal({ isOpen, onClose, user }: QrDownloadModalProps)
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          handleRefreshPayload();
-          return QR_EXPIRATION_SECONDS;
+          return 0;
         }
         return prev - 1;
       });
@@ -113,6 +115,13 @@ export function QrDownloadModal({ isOpen, onClose, user }: QrDownloadModalProps)
 
     return () => clearInterval(timer);
   }, [isOpen]);
+
+  // Trigger payload refresh upon expiry when timeLeft reaches 0
+  useEffect(() => {
+    if (timeLeft === 0 && isOpen) {
+      handleRefreshPayload('expired');
+    }
+  }, [timeLeft, isOpen]);
 
   const expiresAt = issuedAt + QR_EXPIRATION_SECONDS * 1000;
   const progressPercent = Math.max(0, Math.min(100, (timeLeft / QR_EXPIRATION_SECONDS) * 100));
@@ -389,6 +398,23 @@ export function QrDownloadModal({ isOpen, onClose, user }: QrDownloadModalProps)
 
         {/* Modal Body */}
         <div className="p-5 overflow-y-auto space-y-4 flex-1">
+          {/* Automatic Expiry Refresh / Manual Refresh Toast Banner */}
+          {isRefreshedToast && (
+            <div className="rounded-xl bg-indigo-50 border border-indigo-200 p-3 text-xs text-indigo-900 flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-indigo-600 shrink-0" />
+                <span>
+                  {refreshReason === 'expired'
+                    ? 'QR Payload expired (15m limit reached) — automatically generated fresh token & restarted timer!'
+                    : 'QR Security Payload manually refreshed! New 15-minute token generated.'}
+                </span>
+              </div>
+              <span className="font-mono text-[10px] bg-indigo-200/70 text-indigo-800 px-1.5 py-0.5 rounded font-bold">
+                Nonce #{sessionNonce}
+              </span>
+            </div>
+          )}
+
           {/* Download Success Flash Banner */}
           {downloadSuccess && (
             <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 flex items-center gap-2 animate-in fade-in">
@@ -431,11 +457,11 @@ export function QrDownloadModal({ isOpen, onClose, user }: QrDownloadModalProps)
               </div>
 
               {/* Visual 15-Minute Expiration Timer & Countdown Progress Bar */}
-              <div className="w-full rounded-xl bg-white border border-slate-200 p-3 shadow-2xs space-y-2">
+              <div className="w-full rounded-xl bg-white border border-slate-200 p-3 shadow-2xs space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-slate-700">
                     <Timer
-                      className={`h-3.5 w-3.5 ${
+                      className={`h-4 w-4 ${
                         timeLeft <= 60
                           ? 'text-rose-600 animate-pulse'
                           : timeLeft <= 300
@@ -443,23 +469,26 @@ export function QrDownloadModal({ isOpen, onClose, user }: QrDownloadModalProps)
                           : 'text-indigo-600'
                       }`}
                     />
-                    <span className="text-[11px] font-bold">QR Expiration Timer</span>
+                    <div>
+                      <span className="text-[11px] font-bold block leading-tight">15-Min Expiration Timer</span>
+                      <span className="text-[9px] text-slate-400">Auto-refreshes payload upon expiry</span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span
-                      className={`font-mono text-xs font-bold px-1.5 py-0.5 rounded ${
+                      className={`font-mono text-xs font-black px-2 py-0.5 rounded shadow-2xs ${
                         timeLeft <= 60
                           ? 'bg-rose-100 text-rose-700 border border-rose-200 animate-pulse'
                           : timeLeft <= 300
                           ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                          : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                          : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                       }`}
                     >
                       {formatCountdown(timeLeft)}
                     </span>
                     <button
                       type="button"
-                      onClick={handleRefreshPayload}
+                      onClick={() => handleRefreshPayload('manual')}
                       className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition"
                       title="Force refresh payload & restart 15-minute countdown"
                     >
@@ -468,24 +497,32 @@ export function QrDownloadModal({ isOpen, onClose, user }: QrDownloadModalProps)
                   </div>
                 </div>
 
-                {/* Progress Bar */}
-                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200/80">
-                  <div
-                    className={`h-full transition-all duration-1000 ease-linear rounded-full ${
-                      timeLeft <= 60
-                        ? 'bg-rose-500'
-                        : timeLeft <= 300
-                        ? 'bg-amber-500'
-                        : 'bg-gradient-to-r from-indigo-500 to-indigo-600'
-                    }`}
-                    style={{ width: `${progressPercent}%` }}
-                  />
+                {/* Visual Countdown Progress Bar */}
+                <div className="space-y-1">
+                  <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200/80 p-0.5">
+                    <div
+                      className={`h-full transition-all duration-1000 ease-linear rounded-full ${
+                        timeLeft <= 60
+                          ? 'bg-rose-500 shadow-sm shadow-rose-400 animate-pulse'
+                          : timeLeft <= 300
+                          ? 'bg-amber-500'
+                          : 'bg-gradient-to-r from-indigo-500 via-indigo-600 to-emerald-500'
+                      }`}
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                    <span>{Math.round(progressPercent)}% time remaining</span>
+                    <span>
+                      Exp: {new Date(expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                <div className="flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-100 pt-1.5">
                   <span className="flex items-center gap-1">
                     <Lock className="h-3 w-3 text-emerald-600" />
-                    <span>Auto-refreshes every 15 mins</span>
+                    <span>Dynamic token valid 15m</span>
                   </span>
                   <span className="font-mono text-[9px] text-slate-400">Nonce: #{sessionNonce}</span>
                 </div>

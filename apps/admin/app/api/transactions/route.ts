@@ -4,12 +4,17 @@ import { transactionsStore } from '@/lib/db';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get('userId');
+  const walletId = searchParams.get('walletId');
   const appSource = searchParams.get('appSource');
   const type = searchParams.get('type');
   const fromDate = searchParams.get('fromDate');
   const toDate = searchParams.get('toDate');
 
   let results = [...transactionsStore];
+
+  if (walletId) {
+    results = results.filter((t) => t.walletId === walletId);
+  }
 
   if (userId) {
     const q = userId.toLowerCase();
@@ -35,7 +40,7 @@ export async function GET(request: Request) {
   }
 
   if (toDate) {
-    const to = new Date(toDate).getTime() + 86400000; // include full day
+    const to = new Date(toDate).getTime() + 86400000;
     results = results.filter((t) => new Date(t.createdAt).getTime() <= to);
   }
 

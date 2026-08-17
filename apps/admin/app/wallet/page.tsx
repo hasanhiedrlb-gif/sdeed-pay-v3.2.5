@@ -22,6 +22,7 @@ import {
   FileCheck,
   Send,
 } from 'lucide-react';
+import { CountUp } from '@/components/CountUp';
 
 const METHODS: { id: PaymentMethod; label: string; desc: string; requiresName: boolean }[] = [
   { id: 'omt', label: 'OMT (Intra/Cash)', desc: 'Official Cash Payout via OMT Agents', requiresName: true },
@@ -193,11 +194,16 @@ export default function WalletPage() {
               Available Points Balance
             </span>
             <div className="text-3xl font-extrabold text-emerald-400 font-mono mt-0.5">
-              {Number(currentUser?.points_balance || 0).toLocaleString()}{' '}
+              <CountUp
+                value={Number(currentUser?.points_balance || 0)}
+                prefix=""
+                decimals={0}
+                duration={1200}
+              />{' '}
               <span className="text-xs font-normal text-slate-300">pts</span>
             </div>
             <p className="text-xs font-medium text-emerald-300/90 font-mono">
-              ≈ ${((currentUser?.points_balance || 0) / 10).toFixed(2)} USD
+              ≈ <CountUp value={Number(currentUser?.points_balance || 0) / 10} prefix="$" decimals={2} duration={1200} /> USD
             </p>
             <div className="mt-1 flex items-center justify-end gap-1">
               {currentUser?.kyc_status === 'verified' ? (

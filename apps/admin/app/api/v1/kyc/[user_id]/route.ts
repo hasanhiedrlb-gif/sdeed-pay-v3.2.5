@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import { sdeedpayDb } from '@/lib/sdeedpay-store';
-
-const KAMEKAZ_API_URL =
-  process.env.NEXT_PUBLIC_KAMEKAZ_API || 'https://kamekaz-v3-2-5.vercel.app';
+import {
+  getKamekazKycStatus,
+  setKamekazUserTier,
+  KycTier,
+} from '@/lib/kamekaz-kyc';
+import { SadeedDbService } from '@/lib/db';
 
 export async function GET(
   request: Request,
@@ -10,20 +12,26 @@ export async function GET(
 ) {
   try {
     const { user_id } = await params;
-    const kyc_status = sdeedpayDb.getKycStatus(user_id);
-    const user = sdeedpayDb.getUser(user_id);
+    const kyc = await getKamekazKycStatus(user_id);
+
+    // Sync tier in DB wallet
+    SadeedDbService.updateWalletTier(user_id, kyc.tier);
 
     return NextResponse.json({
-      user_id,
-      name: user?.name || user_id,
-      kyc_status,
+      user_id: kyc.user_id,
+      tier: kyc.tier,
+      tier_level: kyc.tier_level,
+      is_verified: kyc.is_verified,
+      can_pay: kyc.can_pay,
+      topup_limit: kyc.topup_limit,
+      tier_label: kyc.tier_label,
+      kyc_status: kyc.kyc_status,
       app: 'kamekaz',
-      kamekaz_api: KAMEKAZ_API_URL,
     });
   } catch (error: any) {
     return NextResponse.json(
       { message: error?.message || 'Failed to fetch KYC status' },
-      { status: 500 },
+      { status: error?.statusCode || 500 },
     );
   }
 }
@@ -35,21 +43,22 @@ export async function POST(
   try {
     const { user_id } = await params;
     const body = await request.json();
-    const { kyc_status } = body;
+    const tier: KycTier = body.tier || (body.kyc_status === 'verified' ? 'C2' : 'C1');
 
-    if (!kyc_status || !['verified', 'pending', 'unverified', 'rejected'].includes(kyc_status)) {
+    if (!['C0', 'C1', 'C2', 'C3'].includes(tier)) {
       return NextResponse.json(
-        { message: 'Valid kyc_status required: verified, pending, unverified, rejected' },
+        { message: 'Valid tier required: C0, C1, C2, C3' },
         { status: 400 },
       );
     }
 
-    sdeedpayDb.setKycStatus(user_id, kyc_status);
+    setKamekazUserTier(user_id, tier);
+    SadeedDbService.updateWalletTier(user_id, tier);
+    const kyc = await getKamekazKycStatus(user_id);
 
     return NextResponse.json({
-      message: `KYC status for ${user_id} updated to ${kyc_status}`,
-      user_id,
-      kyc_status,
+      message: `KYC tier for ${user_id} updated to ${tier}`,
+      kyc,
     });
   } catch (error: any) {
     return NextResponse.json(

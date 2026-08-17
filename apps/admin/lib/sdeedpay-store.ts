@@ -777,6 +777,7 @@ export const sdeedpayDb = {
     // STEP: CALL sdeed API webhook to update both transactions ledgers
     const txSender: TransactionRecord = {
       id: `tx-p2p-out-${Date.now()}`,
+      walletId: `w-${sender.id}`,
       referenceId: `${transfer.reference_id}-DEBIT`,
       fromUserId: sender.id,
       toUserId: recipient.id,
@@ -790,6 +791,7 @@ export const sdeedpayDb = {
 
     const txRecipient: TransactionRecord = {
       id: `tx-p2p-in-${Date.now()}`,
+      walletId: `w-${recipient.id}`,
       referenceId: `${transfer.reference_id}-CREDIT`,
       fromUserId: sender.id,
       toUserId: recipient.id,

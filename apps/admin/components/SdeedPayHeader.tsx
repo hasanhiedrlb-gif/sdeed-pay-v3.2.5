@@ -34,22 +34,22 @@ export default function SdeedPayHeader() {
   const roleBadges = {
     worker: {
       label: 'Worker / Courier',
-      bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
       icon: Wallet,
     },
     advertiser: {
-      label: 'Advertiser',
-      bg: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      label: 'Advertiser / Merchant',
+      bg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
       icon: Building2,
     },
     admin: {
       label: 'Bank Admin',
-      bg: 'bg-rose-50 text-rose-700 border-rose-200',
+      bg: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
       icon: ShieldCheck,
     },
     platform: {
       label: 'Platform Treasury',
-      bg: 'bg-amber-50 text-amber-700 border-amber-200',
+      bg: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
       icon: Layers,
     },
   };
@@ -60,20 +60,20 @@ export default function SdeedPayHeader() {
   const CurrentIcon = currentBadge.icon;
 
   return (
-    <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between border-b border-slate-200 bg-white/90 px-6 py-3 backdrop-blur-md">
+    <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between border-b border-blue-500/20 bg-slate-950/85 px-6 py-3 backdrop-blur-xl text-white shadow-md">
       {/* Left: App Title & Security Tag */}
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white shadow-sm">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 font-bold text-white shadow-lg shadow-blue-500/20 border border-white/20">
           <Sparkles className="h-5 w-5" />
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-bold tracking-tight text-slate-900">sdeedpay</span>
-            <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-[11px] font-semibold text-indigo-800">
-              v1.1.0 Smart Bank
+            <span className="font-black tracking-tight text-white font-mono">sdeedpay Panel</span>
+            <span className="rounded-md bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-bold text-blue-300 border border-blue-500/30">
+              Glass Blue Theme
             </span>
           </div>
-          <p className="text-xs text-slate-500">Kamekaz Shared Ledger • 10 Point = $1.00 USD</p>
+          <p className="text-xs text-slate-400 font-sans">Kamekaz KYC Integration (C1 Cap $500 • C2 Unlimited) • Zero-Identity</p>
         </div>
       </div>
 
@@ -84,7 +84,7 @@ export default function SdeedPayHeader() {
           onClick={handleReset}
           disabled={resetting}
           title="Reset database to initial seed"
-          className="flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
+          className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition backdrop-blur-sm"
         >
           <RotateCcw className={`h-3.5 w-3.5 ${resetting ? 'animate-spin' : ''}`} />
           <span>{resetting ? 'Resetting...' : 'Reset Demo'}</span>
@@ -94,24 +94,24 @@ export default function SdeedPayHeader() {
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-1.5 text-left hover:bg-slate-100/80 transition"
+            className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-left hover:bg-white/10 transition backdrop-blur-md"
           >
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-slate-700">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30">
               <CurrentIcon className="h-4 w-4" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-semibold text-slate-800">
+                <span className="text-xs font-bold text-white">
                   {currentUser?.name || 'Select User'}
                 </span>
                 <span
-                  className={`rounded border px-1.5 py-0.2 text-[10px] font-semibold ${currentBadge.bg}`}
+                  className={`rounded border px-1.5 py-0.2 text-[9px] font-bold ${currentBadge.bg}`}
                 >
                   {currentBadge.label}
                 </span>
               </div>
-              <p className="font-mono text-[11px] text-slate-500">
-                {currentUser?.id} • <strong className="text-slate-900">{Number(currentUser?.points_balance || 0).toLocaleString()}</strong> pts{' '}
+              <p className="font-mono text-[11px] text-slate-400">
+                {currentUser?.id} • <strong className="text-emerald-400">{Number(currentUser?.points_balance || 0).toLocaleString()}</strong> pts{' '}
                 <span className="text-slate-400">(${(Number(currentUser?.points_balance || 0) / 10).toFixed(2)})</span>
               </p>
             </div>
@@ -124,9 +124,9 @@ export default function SdeedPayHeader() {
                 className="fixed inset-0 z-40"
                 onClick={() => setDropdownOpen(false)}
               />
-              <div className="absolute right-0 top-full z-50 mt-1.5 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
-                <div className="mb-2 px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                  Switch Kamekaz Test Identity
+              <div className="absolute right-0 top-full z-50 mt-1.5 w-76 rounded-2xl border border-white/20 bg-slate-900/95 p-2 shadow-2xl backdrop-blur-2xl">
+                <div className="mb-2 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-white/10 pb-1.5">
+                  Switch Active Identity
                 </div>
                 <div className="space-y-1">
                   {users.map((u) => {
@@ -140,29 +140,29 @@ export default function SdeedPayHeader() {
                           setCurrentUser(u);
                           setDropdownOpen(false);
                         }}
-                        className={`flex w-full items-center justify-between rounded-lg p-2 text-left text-xs transition ${
+                        className={`flex w-full items-center justify-between rounded-xl p-2.5 text-left text-xs transition ${
                           isSelected
-                            ? 'bg-indigo-50 text-indigo-900 font-medium'
-                            : 'text-slate-700 hover:bg-slate-50'
+                            ? 'bg-blue-600/30 text-white font-medium border border-blue-500/40'
+                            : 'text-slate-300 hover:bg-white/5 hover:text-white'
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <Icon className="h-4 w-4 text-slate-400" />
+                          <Icon className="h-4 w-4 text-blue-400" />
                           <div>
-                            <p className="font-medium leading-none">{u.name}</p>
+                            <p className="font-bold leading-none text-white">{u.name}</p>
                             <p className="font-mono text-[10px] text-slate-400">{u.id}</p>
                           </div>
                         </div>
                         <div className="text-right">
                           <span
-                            className={`inline-block rounded border px-1 py-0.5 text-[9px] font-bold ${badge.bg}`}
+                            className={`inline-block rounded border px-1 py-0.5 text-[8px] font-bold uppercase ${badge.bg}`}
                           >
                             {badge.label}
                           </span>
-                          <p className="font-mono text-[11px] font-bold text-slate-900">
+                          <p className="font-mono text-[11px] font-black text-emerald-400">
                             {Number(u.points_balance).toLocaleString()} pts
                           </p>
-                          <p className="font-mono text-[10px] text-slate-400">
+                          <p className="font-mono text-[9px] text-slate-400">
                             ${(u.points_balance / 10).toFixed(2)} USD
                           </p>
                         </div>

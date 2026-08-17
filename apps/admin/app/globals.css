@@ -2,7 +2,136 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-gradient: linear-gradient(135deg, #0A0F1E 0%, #1A2340 50%, #0F172A 100%);
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-hover: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-border-focus: rgba(79, 138, 255, 0.5);
+  --primary-btn-bg: #4F8AFF;
+  --primary-btn-shadow: 0 0 20px rgba(79, 138, 255, 0.4);
+  --text-main: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --accent-cyan: #38BDF8;
+  --accent-emerald: #34D399;
+  --accent-rose: #FB7185;
+}
+
 body {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background: linear-gradient(135deg, #0A0F1E 0%, #1A2340 50%, #0F172A 100%);
+  background-attachment: fixed;
+  color: #F8FAFC;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Custom Scrollbar for Luxury Glass Theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 15, 30, 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(79, 138, 255, 0.3);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(79, 138, 255, 0.6);
+}
+
+/* Glass Theme Component Utilities */
+.glass-card {
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+}
+
+.glass-card-hover {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-card-hover:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(79, 138, 255, 0.35) !important;
+  box-shadow: 0 12px 40px 0 rgba(79, 138, 255, 0.18) !important;
+  transform: translateY(-1px);
+}
+
+.glass-btn-primary {
+  background: #4F8AFF !important;
+  color: #F8FAFC !important;
+  box-shadow: 0 0 20px rgba(79, 138, 255, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.glass-btn-primary:hover:not(:disabled) {
+  background: #3B7BF6 !important;
+  box-shadow: 0 0 28px rgba(79, 138, 255, 0.65) !important;
+  transform: translateY(-1px);
+}
+
+.glass-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.glass-btn-secondary {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #F8FAFC !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.glass-btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.glass-input {
+  background: rgba(10, 15, 30, 0.7) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #F8FAFC !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.glass-input:focus {
+  border-color: #4F8AFF !important;
+  box-shadow: 0 0 15px rgba(79, 138, 255, 0.35) !important;
+  outline: none !important;
+}
+
+.glass-input::placeholder {
+  color: #94A3B8 !important;
+}
+
+.glass-table {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.glass-table th {
+  color: #94A3B8 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.glass-table td {
+  color: #F8FAFC !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+.glass-table tr:hover td {
+  background: rgba(255, 255, 255, 0.05) !important;
 }

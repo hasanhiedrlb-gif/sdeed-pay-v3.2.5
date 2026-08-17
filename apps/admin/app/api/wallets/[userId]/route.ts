@@ -1,24 +1,32 @@
 import { NextResponse } from 'next/server';
-import { walletsStore } from '@/lib/db';
+import { SadeedDbService } from '@/lib/db';
 
 export async function GET(
   request: Request,
-  { params }: { params: { userId: string } },
+  { params }: { params: Promise<{ userId: string }> },
 ) {
-  const userId = decodeURIComponent(params.userId);
-  const wallet = walletsStore.find((w) => w.userId.toLowerCase() === userId.toLowerCase());
+  try {
+    const { userId: rawUserId } = await params;
+    const userId = decodeURIComponent(rawUserId);
 
-  if (!wallet) {
-    // If not found, create or return not found
-    return NextResponse.json({ message: `Wallet not found for userId ${userId}` }, { status: 404 });
+    let wallet = SadeedDbService.findWalletByUserId(userId);
+    if (!wallet) {
+      wallet = await SadeedDbService.getOrCreateWallet(userId);
+    }
+
+    return NextResponse.json({
+      id: wallet.id,
+      userId: wallet.userId,
+      tier: wallet.tier,
+      balance: wallet.balance,
+      currency: wallet.currency,
+      createdAt: wallet.createdAt,
+      updatedAt: wallet.updatedAt,
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { message: error?.message || 'Failed to fetch wallet' },
+      { status: 500 },
+    );
   }
-
-  return NextResponse.json({
-    id: wallet.id,
-    userId: wallet.userId,
-    balance: wallet.balance,
-    currency: wallet.currency,
-    createdAt: wallet.createdAt,
-    updatedAt: wallet.updatedAt,
-  });
 }

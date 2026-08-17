@@ -79,6 +79,15 @@ export interface SpWithdrawalRequest {
   updated_at?: string;
 }
 
+export interface PoolStats {
+  totalLiquidity: number;
+  totalCount: number;
+  greenCount: number;
+  blueCount: number;
+  orangeCount: number;
+  redCount: number;
+}
+
 export interface CombinationItem {
   amount: number;
   count: number;
